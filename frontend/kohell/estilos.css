@@ -553,7 +553,7 @@ section {
   -webkit-overflow-scrolling: touch;
   padding-bottom: 12px;
   scrollbar-width: thin;
-  scrollbar-color: #d4d0e0 transparent;
+  scrollbar-color: #e8a4b8 transparent;
 }
 
 .redes-grid::-webkit-scrollbar {
@@ -565,7 +565,7 @@ section {
 }
 
 .redes-grid::-webkit-scrollbar-thumb {
-  background: #d4d0e0;
+  background: #e8a4b8;
   border-radius: 99px;
 }
 
@@ -957,11 +957,11 @@ section {
   height: 60px;
   border-radius: 50%;
   border: none;
-  background: linear-gradient(135deg, #8b5cf6, #a78bfa);
+  background: linear-gradient(135deg, #e8a4b8, #f9c0d0);
   color: #fff;
   font-size: 1.5rem;
   cursor: pointer;
-  box-shadow: 0 4px 20px rgba(139, 92, 246, 0.4);
+  box-shadow: 0 4px 20px rgba(232, 164, 184, 0.4);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -970,7 +970,7 @@ section {
 
 .cart-fab:hover {
   transform: scale(1.08);
-  box-shadow: 0 6px 28px rgba(139, 92, 246, 0.55);
+  box-shadow: 0 6px 28px rgba(232, 164, 184, 0.55);
 }
 
 .cart-fab:active {
@@ -1061,7 +1061,7 @@ section {
 }
 
 .modal-close:hover {
-  background: #f3f0ff;
+  background: #fce4ec;
   color: #1a1a2e;
 }
 
@@ -1123,7 +1123,7 @@ section {
 .cart-item-qty-btn {
   width: 28px;
   height: 28px;
-  border: 1px solid #d4d0e0;
+  border: 1px solid rgba(212, 165, 181, 0.5);
   border-radius: 6px;
   background: #fff;
   color: #1a1a2e;
@@ -1136,7 +1136,7 @@ section {
 }
 
 .cart-item-qty-btn:hover {
-  background: #f3f0ff;
+  background: #fce4ec;
 }
 
 .cart-item-qty {
@@ -1150,7 +1150,7 @@ section {
 .cart-item-subtotal {
   font-size: 0.85rem;
   font-weight: 700;
-  color: #8b5cf6;
+  color: #e879a4;
   min-width: 70px;
   text-align: right;
 }
@@ -1184,9 +1184,9 @@ section {
   flex-shrink: 0;
 }
 .cart-item-badge-infinity {
-  background: linear-gradient(135deg, rgba(139, 92, 246, 0.14), rgba(167, 139, 250, 0.14));
-  color: #6d28d9;
-  border: 1px solid rgba(139, 92, 246, 0.32);
+  background: linear-gradient(135deg, rgba(243, 126, 46, 0.14), rgba(253, 186, 140, 0.14));
+  color: #d35400;
+  border: 1px solid rgba(243, 126, 46, 0.32);
 }
 .cart-item-badge-kohell {
   background: linear-gradient(135deg, rgba(212, 165, 181, 0.18), rgba(247, 198, 165, 0.18));
@@ -1211,7 +1211,7 @@ section {
 
 .cart-total strong {
   font-size: 1.3rem;
-  color: #8b5cf6;
+  color: #e879a4;
 }
 
 .cart-actions {
@@ -1241,20 +1241,20 @@ section {
 .form-group select {
   width: 100%;
   padding: 10px 14px;
-  border: 1.5px solid #d4d0e0;
+  border: 1.5px solid rgba(212, 165, 181, 0.5);
   border-radius: 10px;
   font-size: 0.9rem;
   font-family: 'Plus Jakarta Sans', sans-serif;
   color: #1a1a2e;
-  background: #fafaff;
+  background: #fff5f7;
   transition: border-color 0.2s, box-shadow 0.2s;
   box-sizing: border-box;
 }
 
 .form-group input:focus {
   outline: none;
-  border-color: #8b5cf6;
-  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.15);
+  border-color: #e879a4;
+  box-shadow: 0 0 0 3px rgba(232, 121, 164, 0.15);
 }
 
 .form-error {
@@ -1275,13 +1275,13 @@ section {
   gap: 6px;
   margin-top: 10px;
   padding-top: 10px;
-  border-top: 1px solid #e8e6f0;
+  border-top: 1px solid rgba(212, 165, 181, 0.35);
 }
 
 .producto-card-add-qty {
   width: 48px;
   padding: 6px 8px;
-  border: 1.5px solid #d4d0e0;
+  border: 1.5px solid rgba(212, 165, 181, 0.5);
   border-radius: 8px;
   font-size: 0.82rem;
   font-weight: 600;
@@ -1295,7 +1295,7 @@ section {
 
 .producto-card-add-qty:focus {
   outline: none;
-  border-color: #8b5cf6;
+  border-color: #e879a4;
 }
 
 .producto-card-add-btn {
@@ -1303,7 +1303,7 @@ section {
   padding: 7px 12px;
   border: none;
   border-radius: 8px;
-  background: linear-gradient(135deg, #8b5cf6, #a78bfa);
+  background: linear-gradient(135deg, #e8a4b8, #f9c0d0);
   color: #fff;
   font-size: 0.78rem;
   font-weight: 600;
@@ -1370,7 +1370,7 @@ section {
   gap: 8px;
   padding: 8px 14px 8px 10px;
   background: #ffffff;
-  border: 1px solid rgba(139, 92, 246, 0.22);
+  border: 1px solid rgba(232, 164, 184, 0.22);
   border-radius: 100px;
   text-decoration: none;
   color: #1a1a2e;
@@ -1383,8 +1383,8 @@ section {
 }
 .brand-switch-nav:hover {
   transform: translateY(-1px);
-  box-shadow: 0 6px 18px rgba(139, 92, 246, 0.28);
-  border-color: #8b5cf6;
+  box-shadow: 0 6px 18px rgba(232, 164, 184, 0.28);
+  border-color: #e879a4;
 }
 .brand-switch-nav:active { transform: translateY(0); }
 .brand-switch-nav-icon {
@@ -1394,13 +1394,13 @@ section {
   width: 24px;
   height: 24px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #8b5cf6 0%, #a78bfa 100%);
+  background: linear-gradient(135deg, #e8a4b8 0%, #f9c0d0 100%);
   color: #ffffff;
   font-weight: 800;
   font-size: 0.9rem;
 }
 .brand-switch-nav-text strong {
-  color: #7c3aed;
+  color: #e879a4;
   font-weight: 800;
   margin-left: 2px;
 }

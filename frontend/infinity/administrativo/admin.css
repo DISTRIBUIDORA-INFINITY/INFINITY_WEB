@@ -5,28 +5,28 @@
    ════════════════════════════════ */
 
 :root {
-  --bg:           #fafaff;
-  --bg-soft:      #f5f3ff;
+  --bg:           #fffaf5;
+  --bg-soft:      #fff1e6;
   --white:        #ffffff;
   --ink:          #1a1a2e;
   --ink-soft:     #4a4a68;
   --ink-mute:     #8b8ba7;
-  --line:         rgba(139, 92, 246, 0.4);
-  --line-strong:  rgba(139, 92, 246, 0.6);
+  --line:         rgba(243, 126, 46, 0.4);
+  --line-strong:  rgba(243, 126, 46, 0.6);
   --danger:       #b91c1c;
   --danger-soft:  rgba(220, 38, 38, 0.08);
 
-  --violet:       #a78bfa;
-  --violet-deep:  #8b5cf6;
-  --pink:         #f0abfc;
-  --cyan:         #67e8f9;
+  --violet:       #f37e2e;
+  --violet-deep:  #f37e2e;
+  --pink:         #fdba8c;
+  --cyan:         #ffd3b6;
 
-  --grad-primary: linear-gradient(135deg, #a78bfa 0%, #f0abfc 50%, #67e8f9 100%);
-  --grad-text:    linear-gradient(135deg, #8b5cf6 0%, #e879f9 50%, #22d3ee 100%);
+  --grad-primary: linear-gradient(135deg, #f37e2e 0%, #fdba8c 50%, #ffd3b6 100%);
+  --grad-text:    linear-gradient(135deg, #f37e2e 0%, #f9a87c 50%, #fdba8c 100%);
 
-  --shadow-sm:    0 4px 14px rgba(167, 139, 250, 0.16);
-  --shadow-md:    0 10px 40px rgba(167, 139, 250, 0.22);
-  --shadow-lg:    0 20px 60px rgba(167, 139, 250, 0.28);
+  --shadow-sm:    0 4px 14px rgba(243, 126, 46, 0.16);
+  --shadow-md:    0 10px 40px rgba(243, 126, 46, 0.22);
+  --shadow-lg:    0 20px 60px rgba(243, 126, 46, 0.28);
 
   --radius-sm:    12px;
   --radius-md:    20px;
@@ -77,6 +77,7 @@ button { font-family: inherit; cursor: pointer; }
   width: 520px; height: 520px;
   background: var(--violet);
   top: -120px; left: -120px;
+  opacity: 0.35;
 }
 
 .mesh-blob-2 {
@@ -84,6 +85,7 @@ button { font-family: inherit; cursor: pointer; }
   background: var(--pink);
   top: 30%; right: -120px;
   animation-delay: -7s;
+  opacity: 0.35;
 }
 
 .mesh-blob-3 {
@@ -91,6 +93,7 @@ button { font-family: inherit; cursor: pointer; }
   background: var(--cyan);
   bottom: -140px; left: 25%;
   animation-delay: -14s;
+  opacity: 0.35;
 }
 
 @keyframes float {
@@ -335,7 +338,7 @@ button { font-family: inherit; cursor: pointer; }
 select {
   cursor: pointer;
   appearance: none;
-  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%238b5cf6' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/svg%3e");
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23f37e2e' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/svg%3e");
   background-repeat: no-repeat;
   background-position: right 18px center;
   padding-right: 44px;
@@ -412,14 +415,14 @@ select {
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
 }
 .brand-switcher-btn:hover {
-  border-color: #a78bfa;
+  border-color: #f37e2e;
   color: var(--ink, #1a1a2e);
 }
 .brand-switcher-btn.active {
-  background: linear-gradient(135deg, #8b5cf6 0%, #d4a5b5 100%);
+  background: linear-gradient(135deg, #f37e2e 0%, #fdba8c 100%);
   color: white;
   border-color: transparent;
-  box-shadow: 0 4px 16px rgba(139, 92, 246, 0.3);
+  box-shadow: 0 4px 16px rgba(243, 126, 46, 0.3);
 }
 .brand-switcher-icon {
   font-weight: 800;
@@ -2605,7 +2608,7 @@ select {
   align-items: center;
   justify-content: space-between;
   padding: 8px 12px;
-  background: #f8f7fc;
+  background: #fff6f0;
   border-radius: 8px;
   margin-bottom: 6px;
 }
@@ -2667,29 +2670,29 @@ select {
   padding: 10px 12px;
   font-weight: 700;
   color: #4a4a68;
-  border-bottom: 2px solid #e8e6f0;
+  border-bottom: 2px solid #f3e2d6;
   white-space: nowrap;
 }
 
 .pedidos-table td {
   padding: 10px 12px;
-  border-bottom: 1px solid #e8e6f0;
+  border-bottom: 1px solid #f3e2d6;
   color: #1a1a2e;
 }
 
 .pedidos-table tbody tr:hover {
-  background: #f8f7fc;
+  background: #fff6f0;
 }
 
 .pedidos-total {
   font-weight: 700;
-  color: #8b5cf6;
+  color: #f37e2e;
   white-space: nowrap;
 }
 
 .pedidos-actions-col {
   text-align: left;
-  width: 200px;
+  width: 320px;
 }
 
 .pedidos-table td:last-child,
@@ -2705,7 +2708,7 @@ select {
 
 .pedido-delete {
   background: none;
-  border: 1.5px solid #e0dce8;
+  border: 1.5px solid #e8c6a8;
   color: #b91c1c;
   padding: 6px 10px;
   border-radius: 8px;
@@ -2742,8 +2745,8 @@ select {
   align-items: center;
   gap: 14px;
   padding: 10px 14px;
-  background: #fafaff;
-  border: 1.5px solid #e8e6f0;
+  background: #fffaf7;
+  border: 1.5px solid #f3e2d6;
   border-radius: 10px;
   font-size: 0.85rem;
 }

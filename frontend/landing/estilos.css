@@ -4,19 +4,19 @@
    ════════════════════════════════ */
 
 :root {
-  --bg:           #fafaff;
-  --bg-soft:      #f4f4fb;
+  --bg:           #fffaf5;
+  --bg-soft:      #fff1e6;
   --text:         #1a1a2e;
   --text-soft:    #4a4a68;
   --text-mute:    #8b8ba7;
-  --border:       rgba(139, 92, 246, 0.12);
+  --border:       rgba(243, 126, 46, 0.12);
   --border-soft:  rgba(26, 26, 46, 0.06);
   --card-bg:      #ffffff;
   --shadow:       0 10px 40px -10px rgba(26, 26, 46, 0.12);
   --shadow-lg:    0 25px 60px -20px rgba(26, 26, 46, 0.18);
 
-  --inf-primary:  #8b5cf6;
-  --inf-soft:     #f5f3ff;
+  --inf-primary:  #f37e2e;
+  --inf-soft:     #fff1e6;
   --koh-primary:  #d4a5b5;
   --koh-soft:     #fce4ec;
 
@@ -58,7 +58,7 @@ a { color: inherit; text-decoration: none; }
 }
 .mesh-blob-1 {
   width: 500px; height: 500px;
-  background: radial-gradient(circle, #8b5cf6 0%, transparent 70%);
+  background: radial-gradient(circle, #f37e2e 0%, transparent 70%);
   top: -100px; left: -100px;
   animation-delay: 0s;
 }
@@ -70,7 +70,7 @@ a { color: inherit; text-decoration: none; }
 }
 .mesh-blob-3 {
   width: 600px; height: 600px;
-  background: radial-gradient(circle, #a78bfa 0%, transparent 70%);
+  background: radial-gradient(circle, #fdba8c 0%, transparent 70%);
   bottom: -200px; left: 30%;
   animation-delay: -12s;
 }
@@ -113,7 +113,7 @@ a { color: inherit; text-decoration: none; }
   justify-content: center;
   width: 32px; height: 32px;
   border-radius: 8px;
-  background: linear-gradient(135deg, #8b5cf6 0%, #d4a5b5 100%);
+  background: linear-gradient(135deg, #f37e2e 0%, #d4a5b5 100%);
   color: white;
   font-size: 1.2rem;
   font-weight: 700;
@@ -164,7 +164,7 @@ a { color: inherit; text-decoration: none; }
   font-weight: 600;
   color: var(--text-soft);
   margin-bottom: 24px;
-  box-shadow: 0 2px 8px rgba(139, 92, 246, 0.08);
+  box-shadow: 0 2px 8px rgba(243, 126, 46, 0.08);
 }
 .hero-title {
   font-family: var(--font-serif);
@@ -180,7 +180,7 @@ a { color: inherit; text-decoration: none; }
   color: var(--inf-primary);
 }
 .hero-gradient-text {
-  background: linear-gradient(135deg, #8b5cf6 0%, #d4a5b5 100%);
+  background: linear-gradient(135deg, #f37e2e 0%, #d4a5b5 100%);
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;

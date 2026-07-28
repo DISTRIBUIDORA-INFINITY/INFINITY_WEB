@@ -2413,6 +2413,7 @@ async function cargarListadoPedidos() {
         <td>
           <span class="pedidos-actions-group">
             <a href="/pedidos/${p.filename}" class="btn btn-ghost btn-sm" target="_blank" download>📄 Ver PDF</a>
+            <button type="button" class="btn btn-secondary btn-sm pedido-excel" data-filename="${p.filename}" title="Generar Excel">📊 Excel</button>
             <button type="button" class="btn btn-danger btn-sm pedido-delete" data-filename="${p.filename}" title="Eliminar pedido">Eliminar</button>
           </span>
         </td>
@@ -2437,6 +2438,39 @@ async function cargarListadoPedidos() {
           await cargarListadoPedidos();
         } catch (err) {
           alert('Error: ' + err.message);
+        }
+      });
+    });
+
+    // Wire Excel buttons
+    tbody.querySelectorAll('.pedido-excel').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const filename = btn.dataset.filename;
+        btn.disabled = true;
+        btn.textContent = '⏳';
+        try {
+          const res = await fetch(api(`/pedidos/${encodeURIComponent(filename)}/excel`), {
+            method: 'POST',
+            credentials: 'include'
+          });
+          if (!res.ok) {
+            const data = await res.json().catch(() => ({}));
+            throw new Error(data.error || 'Error al generar Excel');
+          }
+          const blob = await res.blob();
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = filename.replace(/\.pdf$/i, '.xlsx');
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
+          URL.revokeObjectURL(url);
+        } catch (err) {
+          alert('Error: ' + err.message);
+        } finally {
+          btn.disabled = false;
+          btn.textContent = '📊 Excel';
         }
       });
     });

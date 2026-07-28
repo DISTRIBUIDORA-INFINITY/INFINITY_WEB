@@ -24,6 +24,7 @@ const ROOT          = __dirname;
 const FRONTEND_DIR  = path.join(ROOT, 'frontend');
 const DATA_DIR      = path.join(ROOT, 'data');
 const IMG_DIR       = path.join(ROOT, 'Imagenes');
+const LOGOS_DIR     = path.join(ROOT, 'LOGOS');
 const PEDIDOS_DIR   = path.join(ROOT, 'pedidos');
 const VIDEOS_DIR    = path.join(ROOT, 'videos');
 
@@ -142,6 +143,9 @@ app.use('/pedidos', express.static(PEDIDOS_DIR));
 
 // Videos unificados en Infinity Group (sin marca)
 app.use('/videos', express.static(VIDEOS_DIR, { maxAge: '7d' }));
+
+// Logos
+app.use('/LOGOS', express.static(LOGOS_DIR, { maxAge: '7d' }));
 
 // Assets de cada marca (logos, etc.) — servido desde el frontend
 app.use('/infinity/assets', express.static(path.join(FRONTEND_DIR, 'infinity', 'assets')));
@@ -1387,8 +1391,15 @@ async function generarPDFCatalogo(req, res, brand) {
     const CARD_W = 240, CARD_H = 290, IMG_H = 180, GUTTER = 20;
     const TOP_Y = 110, BOTTOM_Y = pageH - 60;
 
-    const PRIMARY = brand === 'kohell' ? '#d4a5b5' : '#8b5cf6';
+    const PRIMARY = brand === 'kohell' ? '#d4a5b5' : '#f37e2e';
     const INK     = brand === 'kohell' ? '#2a1a1e' : '#1a1a2e';
+    const SECONDARY = brand === 'kohell' ? '#e8d0d7' : '#fdba8c';
+
+    const LOGO_FILES = { infinity: 'INFINITY.jpeg', kohell: 'KOHELL.jpeg' };
+    const logoPath   = path.join(LOGOS_DIR, LOGO_FILES[brand] || LOGO_FILES.infinity);
+    let logoBuffer   = null;
+    try { logoBuffer = await sharp(await fs.readFile(logoPath)).resize({ height: 80 }).jpeg({ quality: 95 }).toBuffer(); }
+    catch (err) { console.error('[PDF catálogo] logo no cargado:', err.message); }
 
     function getSeccionNombre(catObj, subArr) {
       const parts = [catObj.nombre];
@@ -1411,7 +1422,7 @@ async function generarPDFCatalogo(req, res, brand) {
     }
 
     function drawImagePlaceholder(x, y) {
-      doc.rect(x, y, CARD_W, IMG_H).fillColor('#f5f3ff').fill();
+      doc.rect(x, y, CARD_W, IMG_H).fillColor(SECONDARY).fill();
       doc.fontSize(11).fillColor('#8b8ba7').font('Helvetica')
          .text('Sin imagen', x, y + IMG_H / 2 - 6, { width: CARD_W, align: 'center' });
     }
@@ -1434,13 +1445,18 @@ async function generarPDFCatalogo(req, res, brand) {
     }
 
     // Portada
-    doc.fontSize(80).fillColor(PRIMARY).font('Helvetica-Bold')
-       .text('∞', 0, 180, { align: 'center', width: pageW });
-    doc.fontSize(28).fillColor(INK).font('Helvetica-Bold')
-       .text(brand === 'kohell' ? 'Kohell' : 'Infinity', 0, 290, { align: 'center', width: pageW });
-    doc.moveTo(200, 340).lineTo(pageW - 200, 340).strokeColor(PRIMARY).lineWidth(2).stroke();
+    if (logoBuffer) {
+      const logoH = 80, logoW = 260;
+      doc.image(logoBuffer, (pageW - logoW) / 2, 160, { fit: [logoW, logoH], align: 'center' });
+    } else {
+      doc.fontSize(80).fillColor(PRIMARY).font('Helvetica-Bold')
+         .text('∞', 0, 180, { align: 'center', width: pageW });
+      doc.fontSize(28).fillColor(INK).font('Helvetica-Bold')
+         .text(brand === 'kohell' ? 'Kohell' : 'Infinity', 0, 290, { align: 'center', width: pageW });
+    }
+    doc.moveTo(200, 270).lineTo(pageW - 200, 270).strokeColor(PRIMARY).lineWidth(2).stroke();
     doc.fontSize(40).fillColor(INK).font('Helvetica-Bold')
-       .text('Catálogo', 0, 380, { align: 'center', width: pageW });
+       .text('Catálogo', 0, 320, { align: 'center', width: pageW });
 
     const fechaStr = new Date().toLocaleDateString('es-CO', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
     doc.fontSize(13).fillColor('#4a4a68').font('Helvetica').text(fechaStr, 0, 450, { align: 'center', width: pageW });
@@ -1693,7 +1709,7 @@ app.post('/api/pedidos/generar-pdf', async (req, res) => {
 
   // Colores por marca
   const COLORS = {
-    infinity: { primary: '#8b5cf6', ink: '#1a1a2e', name: 'Infinity', mark: '∞ Infinity' },
+    infinity: { primary: '#f37e2e', ink: '#1a1a2e', name: 'Infinity', mark: 'Infinity' },
     kohell:   { primary: '#d4a5b5', ink: '#2a1a1e', name: 'Kohell',   mark: 'Kohell' }
   };
 
@@ -1712,10 +1728,34 @@ app.post('/api/pedidos/generar-pdf', async (req, res) => {
     doc.pipe(writeStream);
     const pageW = doc.page.width, pageH = doc.page.height, MARGIN_X = 50;
 
-    // ── Encabezado Infinity Group ──
-    doc.fontSize(36).fillColor('#8b5cf6').font('Helvetica-Bold')
-       .text('∞ Infinity Group', MARGIN_X, 50, { width: pageW - 2 * MARGIN_X });
-    doc.moveTo(MARGIN_X, 100).lineTo(pageW - MARGIN_X, 100).strokeColor('#8b5cf6').lineWidth(1.5).stroke();
+    // ── Logos de las marcas presentes ──
+    const logoFiles = {
+      infinity: path.join(LOGOS_DIR, 'INFINITY.jpeg'),
+      kohell:   path.join(LOGOS_DIR, 'KOHELL.jpeg')
+    };
+    const logoBuffers = {};
+    for (const m of marcasPresentes) {
+      try { logoBuffers[m] = await sharp(await fs.readFile(logoFiles[m])).resize({ height: 50 }).jpeg({ quality: 95 }).toBuffer(); }
+      catch (err) { console.error(`[PDF pedido] logo ${m} no cargado:`, err.message); }
+    }
+
+    const headerY = 50;
+    if (marcasPresentes.length === 1 && logoBuffers[marcasPresentes[0]]) {
+      doc.image(logoBuffers[marcasPresentes[0]], MARGIN_X, headerY, { height: 50 });
+    } else {
+      let logoX = MARGIN_X;
+      for (const m of marcasPresentes) {
+        if (logoBuffers[m]) {
+          doc.image(logoBuffers[m], logoX, headerY, { height: 50 });
+          logoX += 140;
+        } else {
+          doc.fontSize(24).fillColor(COLORS[m].primary).font('Helvetica-Bold')
+             .text(COLORS[m].mark, logoX, headerY + 10, { width: 120 });
+          logoX += 140;
+        }
+      }
+    }
+    doc.moveTo(MARGIN_X, 115).lineTo(pageW - MARGIN_X, 115).strokeColor('#1a1a2e').lineWidth(1.5).stroke();
     doc.fontSize(22).fillColor('#1a1a2e').font('Helvetica-Bold')
        .text('Pedido', MARGIN_X, 120, { width: pageW - 2 * MARGIN_X });
 
@@ -1724,7 +1764,7 @@ app.post('/api/pedidos/generar-pdf', async (req, res) => {
     });
     doc.fontSize(10).fillColor('#8b8ba7').font('Helvetica').text(fechaStr, MARGIN_X, 150, { width: pageW - 2 * MARGIN_X });
     if (vendedor) {
-      doc.fontSize(10).fillColor('#8b5cf6').font('Helvetica-Bold')
+      doc.fontSize(10).fillColor('#f37e2e').font('Helvetica-Bold')
          .text(`Vendedor: ${vendedor}`, MARGIN_X, 168, { width: pageW - 2 * MARGIN_X });
     }
     doc.fontSize(14).fillColor('#1a1a2e').font('Helvetica-Bold')
@@ -1812,7 +1852,7 @@ app.post('/api/pedidos/generar-pdf', async (req, res) => {
     cursorY += 14;
     doc.fontSize(13).fillColor('#1a1a2e').font('Helvetica');
     doc.text('Total pedido:', MARGIN_X, cursorY, { continued: true });
-    doc.fontSize(20).fillColor('#8b5cf6').font('Helvetica-Bold')
+    doc.fontSize(20).fillColor('#f37e2e').font('Helvetica-Bold')
        .text(`  $${totalGeneral.toLocaleString('es-CO')}`, { width: pageW - 2 * MARGIN_X });
 
     // Footer con número de página
@@ -1848,6 +1888,61 @@ app.post('/api/pedidos/generar-pdf', async (req, res) => {
   } catch (err) {
     console.error('Pedido PDF error:', err);
     res.status(500).json({ error: 'Error al generar el pedido: ' + err.message });
+  }
+});
+
+app.post('/api/pedidos/:filename/excel', requirePedidosManagement, async (req, res) => {
+  const { filename } = req.params;
+  if (!/^pedido-[\w.-]+\.pdf$/.test(filename)) {
+    return res.status(400).json({ error: 'Nombre de archivo inválido' });
+  }
+  try {
+    const pedidosMeta = await getPedidosMeta();
+    const pedido = pedidosMeta.find(p => p.filename === filename);
+    if (!pedido) return res.status(404).json({ error: 'Pedido no encontrado' });
+
+    const items = Array.isArray(pedido.items) ? pedido.items : [];
+    const cliente = pedido.cliente || {};
+    const total = pedido.total || 0;
+    const vendedor = pedido.vendedor || null;
+
+    const wb = XLSX.utils.book_new();
+    const wsData = [
+      ['Pedido', cliente.nombre || '—'],
+      ['Fecha', pedido.fecha ? new Date(pedido.fecha).toLocaleString('es-CO') : '—'],
+      ['Vendedor', vendedor || '—'],
+      ['Ciudad', cliente.ciudad || '—'],
+      ['Teléfono', cliente.telefono || '—'],
+      ['Dirección', cliente.direccion || '—'],
+      ['Total', total]
+    ];
+    const ws = XLSX.utils.aoa_to_sheet(wsData);
+    XLSX.utils.book_append_sheet(wb, ws, 'Pedido');
+
+    const prodRows = [['REF', 'Producto', 'Marca', 'Cantidad', 'Precio unitario', 'Subtotal']];
+    for (const it of items) {
+      const cantidad = it.cantidad || 1;
+      const precio = it.precio || 0;
+      prodRows.push([
+        it.ref || '—',
+        it.nombre || it.ref || '—',
+        it.marca || 'infinity',
+        cantidad,
+        precio,
+        cantidad * precio
+      ]);
+    }
+    prodRows.push(['', '', '', '', 'TOTAL', total]);
+    const prodWs = XLSX.utils.aoa_to_sheet(prodRows);
+    XLSX.utils.book_append_sheet(wb, prodWs, 'Productos');
+
+    const buf = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename.replace(/\.pdf$/i, '.xlsx')}"`);
+    res.send(buf);
+  } catch (err) {
+    console.error('Excel pedido error:', err);
+    res.status(500).json({ error: 'Error al generar el Excel: ' + err.message });
   }
 });
 
