@@ -1,0 +1,780 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Infinity — Panel Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="admin.css?v=24">
+</head>
+<body>
+
+  <!-- FONDO MESH -->
+  <div class="mesh-bg" aria-hidden="true">
+    <div class="mesh-blob mesh-blob-1"></div>
+    <div class="mesh-blob mesh-blob-2"></div>
+    <div class="mesh-blob mesh-blob-3"></div>
+  </div>
+
+  <!-- LOGIN VIEW -->
+  <main class="login-view" id="loginView">
+    <div class="login-card">
+      <div class="login-header">
+          <a href="/" class="logo logo-login">
+            <span class="logo-mark">∞</span>
+            <span class="logo-text">Infinity Group</span>
+          </a>
+          <span class="login-badge">Panel administrativo</span>
+        </div>
+
+      <h1 class="login-title">Bienvenido <em>de nuevo</em></h1>
+      <p class="login-subtitle">Ingresa tus credenciales para continuar</p>
+
+      <form class="login-form" id="loginForm" autocomplete="on">
+        <div class="form-group">
+          <label for="usuario">Usuario</label>
+          <input type="text" id="usuario" name="usuario" placeholder="admin" required autocomplete="username">
+        </div>
+        <div class="form-group">
+          <label for="contraseña">Contraseña</label>
+          <input type="password" id="contraseña" name="contraseña" placeholder="••••••••" required autocomplete="current-password">
+        </div>
+        <div class="form-error" id="formError" role="alert"></div>
+        <button type="submit" class="btn btn-primary btn-full">Ingresar</button>
+      </form>
+
+      <a href="../" class="back-link">← Volver al catálogo</a>
+    </div>
+  </main>
+
+  <!-- ADMIN APP (post-login) -->
+  <div class="admin-app" id="adminApp" style="display:none">
+
+    <!-- SALUDO SUPERIOR -->
+    <header class="admin-greeting">
+      <h1 class="greeting-title">Hola, <em id="adminName">Admin</em> 👋</h1>
+      <p class="greeting-subtitle">Bienvenido al panel de Infinity Group.</p>
+    </header>
+
+    <!-- SELECTOR DE MARCA -->
+    <div class="brand-switcher" role="tablist" aria-label="Cambiar de marca">
+      <button type="button" class="brand-switcher-btn active" data-brand="infinity" role="tab" aria-selected="true">
+        <span class="brand-switcher-icon">∞</span>
+        <span class="brand-switcher-name">Infinity</span>
+      </button>
+      <button type="button" class="brand-switcher-btn" data-brand="kohell" role="tab" aria-selected="false">
+        <span class="brand-switcher-icon">K</span>
+        <span class="brand-switcher-name">Kohell</span>
+      </button>
+    </div>
+
+    <!-- TOPBAR PILL (sticky) -->
+    <nav class="admin-topbar" aria-label="Navegación del panel">
+      <div class="topbar-container">
+        <button type="button" class="nav-item active" data-view="dashboard">
+          <span class="nav-icon">🏠</span>
+          <span class="nav-label">Dashboard</span>
+        </button>
+        <button type="button" class="nav-item" data-view="productos">
+          <span class="nav-icon">📦</span>
+          <span class="nav-label">Productos</span>
+        </button>
+        <button type="button" class="nav-item" data-view="agotados">
+          <span class="nav-icon">🚫</span>
+          <span class="nav-label">Agotados</span>
+        </button>
+        <button type="button" class="nav-item" data-view="descargas">
+          <span class="nav-icon">⬇️</span>
+          <span class="nav-label">Descargas</span>
+        </button>
+        <button type="button" class="nav-item" data-view="categorias">
+          <span class="nav-icon">🗂️</span>
+          <span class="nav-label">Categorías</span>
+        </button>
+        <button type="button" class="nav-item" data-view="usuarios">
+          <span class="nav-icon">👥</span>
+          <span class="nav-label">Usuarios</span>
+        </button>
+        <button type="button" class="nav-item" data-view="pedidos">
+          <span class="nav-icon">📋</span>
+          <span class="nav-label">Pedidos</span>
+        </button>
+      </div>
+    </nav>
+
+    <!-- CONTENIDO PRINCIPAL -->
+    <main class="admin-main">
+
+      <!-- DASHBOARD VIEW -->
+      <section class="view active" data-view="dashboard">
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-icon">📦</div>
+            <div class="stat-info">
+              <div class="stat-value" id="statProductos">—</div>
+              <div class="stat-label">Productos</div>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon">🗂️</div>
+            <div class="stat-info">
+              <div class="stat-value" id="statCategorias">—</div>
+              <div class="stat-label">Categorías</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Videos -->
+        <div class="view-content-card" style="margin-top:28px">
+          <h2 class="view-section-title">🎬 Videos</h2>
+          <p class="view-section-desc">Sube hasta 10 videos para que aparezcan en el catálogo público, debajo del botón "Ver catálogo".</p>
+
+          <div class="videos-form" style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;align-items:center">
+            <div class="form-group" style="flex:1;min-width:200px;margin-bottom:0">
+              <input type="file" id="videoFileInput" accept="video/*" style="display:none">
+              <div style="display:flex;gap:8px;align-items:center">
+                <button type="button" class="btn btn-ghost" id="btnSeleccionarVideo" style="white-space:nowrap">📁 Seleccionar archivo</button>
+                <span id="videoFileName" style="font-size:0.85rem;color:#8b8ba7;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Ningún archivo seleccionado</span>
+              </div>
+            </div>
+            <button type="button" class="btn btn-primary" id="btnSubirVideo">+ Subir video</button>
+          </div>
+          <div class="form-error" id="videosError" role="alert"></div>
+          <div class="videos-list" id="videosList" style="display:grid;gap:12px"></div>
+        </div>
+      </section>
+
+      <!-- PRODUCTOS VIEW -->
+      <section class="view" data-view="productos">
+        <header class="view-header">
+          <h1 class="view-title">Productos</h1>
+          <p class="view-subtitle">Sube fotos masivamente. La descripción y el precio se asignarán después.</p>
+        </header>
+
+        <div class="view-content-card">
+          <form id="formUploadProductos" class="upload-form" autocomplete="off">
+            <div class="form-group">
+              <label for="uploadCategoria">Categoría destino</label>
+              <select id="uploadCategoria" required>
+                <option value="">— Selecciona una categoría —</option>
+              </select>
+              <span class="form-hint">Todas las fotos subidas se guardarán en esta carpeta.</span>
+            </div>
+
+            <div class="form-group subcat-group" id="uploadSubcatGroup" style="display:none">
+              <label for="uploadSubcategoria">Subcategoría</label>
+              <select id="uploadSubcategoria">
+                <option value="">— Selecciona una subcategoría —</option>
+              </select>
+              <span class="form-hint">Esta categoría tiene subcategorías. Elige la hoja donde van los productos.</span>
+            </div>
+
+            <div class="form-group subcat-group" id="uploadSubSubcatGroup" style="display:none">
+              <label for="uploadSubSubcategoria">Sub-subcategoría</label>
+              <select id="uploadSubSubcategoria">
+                <option value="">— Selecciona una sub-subcategoría —</option>
+              </select>
+              <span class="form-hint">Esta subcategoría tiene sub-subcategorías. Elige la hoja final.</span>
+            </div>
+
+            <div class="form-group">
+              <label>Zona de subida</label>
+              <div class="dropzone" id="dropzone">
+                <input type="file" id="inputFotos" accept="image/*" multiple hidden>
+                <div class="dropzone-inner">
+                  <div class="dropzone-icon">📤</div>
+                  <p class="dropzone-title">Arrastra fotos aquí o haz clic para seleccionar</p>
+                  <p class="dropzone-hint">JPG, PNG, WEBP, GIF · Máx 20MB por archivo · 50 archivos por subida</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="upload-preview-section" id="previewSection" style="display:none">
+              <div class="upload-preview-header">
+                <span class="upload-counter">
+                  <strong id="previewCount">0</strong>/50 fotos
+                </span>
+                <button type="button" class="btn btn-ghost btn-sm" id="btnLimpiarPreview">Limpiar todo</button>
+              </div>
+              <div class="upload-preview-grid" id="previewGrid"></div>
+            </div>
+
+            <div class="upload-destino" id="uploadDestino" style="display:none">
+              <span class="upload-destino-label">Destino:</span>
+              <span class="upload-destino-path" id="uploadDestinoPath"></span>
+            </div>
+
+            <div class="upload-summary" id="uploadSummary" style="display:none"></div>
+
+            <div class="form-error" id="uploadError" role="alert"></div>
+
+            <div class="form-actions">
+              <button type="submit" class="btn btn-primary" id="btnSubirProductos" disabled>
+                <span class="btn-text">Subir fotos</span>
+                <span class="btn-spinner" style="display:none">⏳</span>
+              </button>
+            </div>
+          </form>
+        </div>
+
+        <!-- Sub-sección: Asignar nombre + precio desde Excel/CSV -->
+        <div class="view-subsection" style="margin-top:28px">
+          <h2 class="subsection-title">📊 Asignar descripción y precio (Excel/CSV)</h2>
+          <div class="view-content-card">
+            <p class="excel-format-hint">
+              <span class="excel-format-cols">
+                <strong>A</strong> REFERENCIA
+                <span class="sep">|</span>
+                <strong>B</strong> DESCRIPCION
+                <span class="sep">|</span>
+                <strong>C</strong> PRECIO
+              </span>
+              <span class="excel-format-meta">.xlsx / .csv · encabezados en la primera fila · celdas vacías no sobrescriben</span>
+            </p>
+
+            <form id="formExcelUpload" class="excel-form" autocomplete="off">
+              <div class="form-group">
+                <label for="excelArchivo">Archivo Excel/CSV</label>
+                <div style="display:flex;gap:8px;align-items:center">
+                  <input type="file" id="excelArchivo" accept=".xlsx,.xls,.csv" required style="display:none">
+                  <button type="button" class="btn btn-ghost" id="btnSeleccionarExcel">📁 Seleccionar archivo</button>
+                  <span class="form-hint" id="excelArchivoHint" style="margin:0">Ningún archivo seleccionado</span>
+                </div>
+              </div>
+
+              <div class="excel-summary" id="excelSummary" style="display:none"></div>
+
+              <div class="form-error" id="excelError" role="alert"></div>
+
+              <div class="form-actions">
+                <button type="submit" class="btn btn-primary" id="btnProcesarExcel" disabled>
+                  <span class="btn-text">Procesar archivo</span>
+                  <span class="btn-spinner" style="display:none">⏳</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+
+        <!-- Sub-sección: Lista de productos disponibles -->
+        <div class="view-subsection">
+          <div class="subsection-header">
+            <h2 class="subsection-title">📋 Productos disponibles</h2>
+            <span class="productos-counter" id="productosDisponiblesCount">0</span>
+          </div>
+          <div class="view-content-card">
+            <div class="productos-search">
+              <span class="productos-search-icon" aria-hidden="true">🔍</span>
+              <input type="text" id="productosSearch" placeholder="Buscar por referencia..." autocomplete="off" spellcheck="false">
+              <button type="button" class="productos-search-clear" id="productosSearchClear" style="display:none" aria-label="Limpiar búsqueda">✕</button>
+            </div>
+            <div class="productos-grid" id="productosListGrid">
+              <!-- Renderizado por JS -->
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- AGOTADOS VIEW -->
+      <section class="view" data-view="agotados">
+        <header class="view-header">
+          <h1 class="view-title">Agotados</h1>
+          <p class="view-subtitle">Productos que ya no están disponibles. Puedes reactivarlos o eliminarlos definitivamente.</p>
+        </header>
+
+        <div class="view-content-card">
+          <div class="agotados-grid" id="agotadosGrid">
+            <!-- Renderizado por JS -->
+          </div>
+        </div>
+      </section>
+
+      <!-- DESCARGAS VIEW (vendedores y otros usuarios con permiso) -->
+      <section class="view" data-view="descargas">
+        <header class="view-header">
+          <h1 class="view-title">Descargas</h1>
+          <p class="view-subtitle">Recursos descargables del catálogo.</p>
+        </header>
+
+        <div class="subtabs" role="tablist" aria-label="Tipos de descarga">
+          <button type="button" class="subtab active" data-subtab="pdf" role="tab" aria-selected="true">
+            <span class="subtab-icon">📄</span>
+            <span class="subtab-label">PDF</span>
+          </button>
+          <button type="button" class="subtab" data-subtab="fotos" role="tab" aria-selected="false">
+            <span class="subtab-icon">🖼️</span>
+            <span class="subtab-label">Fotos</span>
+          </button>
+        </div>
+
+        <div class="subtab-panel active" data-subtab-panel="pdf">
+          <div class="view-content-card">
+            <div class="pdf-intro">
+              <div class="pdf-intro-icon">📄</div>
+              <div>
+                <h3 class="pdf-intro-title">Generar catálogo en PDF</h3>
+                <p class="pdf-intro-desc">Marca las categorías y subcategorías que quieres incluir. El PDF se generará al instante con foto, referencia, nombre y precio de cada producto.</p>
+              </div>
+            </div>
+
+            <div class="pdf-selector" id="pdfSelector">
+              <p class="pdf-selector-loading">Cargando categorías…</p>
+            </div>
+
+            <div class="pdf-summary" id="pdfSummary" style="display:none">
+              <span class="pdf-summary-text">
+                <strong id="pdfSummaryCount">0</strong> producto(s) seleccionado(s) en <strong id="pdfSummaryLeaves">0</strong> hoja(s)
+              </span>
+            </div>
+
+            <div class="form-error" id="pdfError" role="alert"></div>
+
+            <div class="pdf-actions">
+              <button type="button" class="btn btn-ghost" id="btnPdfDesmarcarTodo">
+                <span>✕</span> Desmarcar todo
+              </button>
+              <button type="button" class="btn btn-ghost" id="btnPdfMarcarTodo">
+                <span>✓</span> Marcar todo
+              </button>
+              <button type="button" class="btn btn-primary btn-pdf-generar" id="btnPdfGenerar" disabled>
+                <span class="btn-text">📄 Generar PDF</span>
+                <span class="btn-spinner" style="display:none">⏳</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="subtab-panel" data-subtab-panel="fotos">
+          <div class="view-content-card">
+            <div class="pdf-intro">
+              <div class="pdf-intro-icon">🖼️</div>
+              <div>
+                <h3 class="pdf-intro-title">Descargar fotos del catálogo</h3>
+                <p class="pdf-intro-desc">Marca las categorías y subcategorías para descargar un ZIP con las fotos de los productos seleccionados.</p>
+              </div>
+            </div>
+
+            <div class="pdf-selector" id="fotosSelector">
+              <p class="pdf-selector-loading">Cargando categorías…</p>
+            </div>
+
+            <div class="pdf-summary" id="fotosSummary" style="display:none">
+              <span class="pdf-summary-text">
+                <strong id="fotosSummaryCount">0</strong> producto(s) seleccionado(s) en <strong id="fotosSummaryLeaves">0</strong> hoja(s)
+              </span>
+            </div>
+
+            <div class="form-error" id="fotosError" role="alert"></div>
+
+            <div class="pdf-actions">
+              <button type="button" class="btn btn-ghost" id="btnFotosDesmarcarTodo">
+                <span>✕</span> Desmarcar todo
+              </button>
+              <button type="button" class="btn btn-ghost" id="btnFotosMarcarTodo">
+                <span>✓</span> Marcar todo
+              </button>
+              <button type="button" class="btn btn-primary btn-pdf-generar" id="btnFotosGenerar" disabled>
+                <span class="btn-text">🖼️ Descargar fotos</span>
+                <span class="btn-spinner" style="display:none">⏳</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- CATEGORÍAS VIEW -->
+      <section class="view" data-view="categorias">
+        <header class="view-header view-header-with-action">
+          <div>
+            <h1 class="view-title">Categorías</h1>
+            <p class="view-subtitle">Crea, edita o elimina las categorías del catálogo.</p>
+          </div>
+          <button type="button" class="btn btn-primary" id="btnCrearCategoria">
+            <span>＋</span> Crear categoría
+          </button>
+        </header>
+
+        <div class="view-content-card">
+          <div class="categorias-grid" id="categoriasGrid">
+            <!-- Renderizado por JS -->
+          </div>
+        </div>
+      </section>
+
+      <!-- USUARIOS VIEW (visible si tiene permiso 'usuarios') -->
+      <section class="view" data-view="usuarios">
+        <header class="view-header">
+          <h1 class="view-title">Usuarios</h1>
+          <p class="view-subtitle">Gestiona los usuarios del panel.</p>
+        </header>
+
+        <!-- Sub-sección: Mi contraseña (solo admin) -->
+        <div class="view-subsection" id="miPasswordSubsection">
+          <h2 class="subsection-title">🔑 Mi contraseña</h2>
+          <div class="view-content-card">
+            <form id="formMiPassword" class="password-form" autocomplete="on">
+              <div class="form-group">
+                <label for="miPassActual">Contraseña actual</label>
+                <input type="password" id="miPassActual" required autocomplete="current-password">
+              </div>
+              <div class="form-group">
+                <label for="miPassNueva">Nueva contraseña</label>
+                <input type="password" id="miPassNueva" required minlength="6" autocomplete="new-password">
+                <span class="form-hint">Mínimo 6 caracteres</span>
+              </div>
+              <div class="form-group">
+                <label for="miPassConfirmar">Confirmar nueva contraseña</label>
+                <input type="password" id="miPassConfirmar" required minlength="6" autocomplete="new-password">
+              </div>
+              <div class="form-error" id="miPassError" role="alert"></div>
+              <div class="form-actions">
+                <button type="submit" class="btn btn-primary">Guardar cambios</button>
+              </div>
+            </form>
+          </div>
+        </div>
+
+        <!-- Sub-sección: Gestión de usuarios (admin o permiso 'usuarios') -->
+        <div class="view-subsection" id="gestionUsuariosSubsection">
+          <div class="subsection-header">
+            <h2 class="subsection-title">👥 Gestión de usuarios</h2>
+            <button type="button" class="btn btn-primary" id="btnCrearUsuario">
+              <span>＋</span> Crear usuario
+            </button>
+          </div>
+          <div class="view-content-card">
+            <div class="users-table-wrap">
+              <table class="users-table">
+                <thead>
+                  <tr>
+                    <th>Usuario</th>
+                    <th>Rol</th>
+                    <th class="users-actions-col">Acciones</th>
+                  </tr>
+                </thead>
+                <tbody id="usersListBody">
+                  <!-- Renderizado por JS -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- PEDIDOS VIEW -->
+      <section class="view" data-view="pedidos">
+        <header class="view-header view-header-with-action">
+          <div>
+            <h1 class="view-title">📋 Pedidos</h1>
+            <p class="view-subtitle">Gestiona los vendedores y revisa los pedidos generados.</p>
+          </div>
+        </header>
+
+        <div class="view-section-group">
+          <!-- Gestión de vendedores -->
+          <div class="view-content-card">
+            <h3 class="view-section-title">Vendedores</h3>
+            <p class="view-section-desc">Agrega o quita los vendedores que aparecerán en el formulario de pedido público.</p>
+
+            <div class="vendedores-list" id="vendedoresList">
+              <p class="pdf-selector-loading">Cargando vendedores…</p>
+            </div>
+
+            <div class="vendedores-add">
+              <div class="form-group" style="flex:1;margin-bottom:0">
+                <input type="text" id="vendedorInput" placeholder="Nombre del vendedor" maxlength="60">
+              </div>
+              <button type="button" class="btn btn-primary" id="btnAgregarVendedor">+ Agregar</button>
+            </div>
+            <div class="form-error" id="vendedorError" role="alert"></div>
+          </div>
+
+          <!-- Listado de pedidos -->
+          <div class="view-content-card">
+            <div class="pedidos-filter-bar">
+              <label for="pedidosFilterVendedor">Filtrar por vendedor:</label>
+              <div class="form-group" style="flex:1;margin-bottom:0">
+                <select id="pedidosFilterVendedor">
+                  <option value="">Todos los vendedores</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="pedidos-table-wrap">
+              <table class="pedidos-table">
+                <thead>
+                  <tr>
+                    <th>Fecha</th>
+                    <th>Cliente</th>
+                    <th>Vendedor</th>
+                    <th>Productos</th>
+                    <th>Total</th>
+                    <th class="pedidos-actions-col">Acción</th>
+                  </tr>
+                </thead>
+                <tbody id="pedidosListBody">
+                  <tr><td colspan="6" class="pedidos-empty">No hay pedidos aún.</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </main>
+
+    <!-- BOTÓN FIJO: Cerrar sesión (esquina superior derecha) -->
+    <button type="button" class="btn-logout-fixed" id="btnLogout" aria-label="Cerrar sesión">
+      <span class="logout-icon" aria-hidden="true">↪</span>
+      <span class="logout-label">Cerrar sesión</span>
+    </button>
+  </div>
+
+  <!-- MODAL: Crear usuario -->
+  <div class="modal" id="modalCrearUsuario" style="display:none">
+    <div class="modal-backdrop" data-close-modal="modalCrearUsuario"></div>
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>Crear usuario</h3>
+        <button class="modal-close" data-close-modal="modalCrearUsuario" type="button" aria-label="Cerrar">✕</button>
+      </div>
+      <form id="formCrearUsuario" class="modal-form">
+        <div class="form-group">
+          <label for="nuevoUsuario">Usuario</label>
+          <input type="text" id="nuevoUsuario" required autocomplete="off">
+        </div>
+        <div class="form-group">
+          <label for="nuevoPassword">Contraseña</label>
+          <input type="password" id="nuevoPassword" required minlength="6" autocomplete="new-password">
+          <span class="form-hint">Mínimo 6 caracteres</span>
+        </div>
+        <div class="form-group">
+          <label for="nuevoRol">Rol</label>
+          <select id="nuevoRol" required>
+            <option value="editor">Editor</option>
+            <option value="vendedor">Vendedor</option>
+            <option value="admin">Administrador</option>
+          </select>
+        </div>
+
+        <div class="form-group" id="permisosGroupCrear">
+          <label>Permisos de visibilidad</label>
+          <div class="permissions-grid" id="permisosCrear"></div>
+          <span class="form-hint">Marca las pestañas que este usuario podrá ver.</span>
+        </div>
+        <div class="permission-note" id="permisosNoteCrear" style="display:none">
+          <span>👑</span>
+          <span>Los administradores tienen todos los permisos automáticamente.</span>
+        </div>
+
+        <div class="form-error" id="crearUsuarioError" role="alert"></div>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-ghost" data-close-modal="modalCrearUsuario">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Crear</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: Editar usuario -->
+  <div class="modal" id="modalEditarUsuario" style="display:none">
+    <div class="modal-backdrop" data-close-modal="modalEditarUsuario"></div>
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>Editar usuario</h3>
+        <button class="modal-close" data-close-modal="modalEditarUsuario" type="button" aria-label="Cerrar">✕</button>
+      </div>
+      <form id="formEditarUsuario" class="modal-form">
+        <div class="form-group">
+          <label>Usuario</label>
+          <input type="text" id="editarUsuarioNombre" disabled>
+        </div>
+        <div class="form-group">
+          <label for="editarPassword">Nueva contraseña</label>
+          <input type="password" id="editarPassword" minlength="6" autocomplete="new-password">
+          <span class="form-hint">Déjala vacía para no cambiar</span>
+        </div>
+        <div class="form-group">
+          <label for="editarRol">Rol</label>
+          <select id="editarRol" required>
+            <option value="editor">Editor</option>
+            <option value="vendedor">Vendedor</option>
+            <option value="admin">Administrador</option>
+          </select>
+        </div>
+
+        <div class="form-group" id="permisosGroupEditar">
+          <label>Permisos de visibilidad</label>
+          <div class="permissions-grid" id="permisosEditar"></div>
+          <span class="form-hint">Marca las pestañas que este usuario podrá ver.</span>
+        </div>
+        <div class="permission-note" id="permisosNoteEditar" style="display:none">
+          <span>👑</span>
+          <span>Los administradores tienen todos los permisos automáticamente.</span>
+        </div>
+
+        <div class="form-error" id="editarUsuarioError" role="alert"></div>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-ghost" data-close-modal="modalEditarUsuario">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Guardar cambios</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: Confirmar eliminar -->
+  <div class="modal modal-sm" id="modalConfirmarEliminar" style="display:none">
+    <div class="modal-backdrop" data-close-modal="modalConfirmarEliminar"></div>
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>¿Eliminar usuario?</h3>
+        <button class="modal-close" data-close-modal="modalConfirmarEliminar" type="button" aria-label="Cerrar">✕</button>
+      </div>
+      <div class="modal-body">
+        <p>¿Estás seguro de que quieres eliminar al usuario <strong id="eliminarUsuarioNombre"></strong>?</p>
+        <p class="modal-warning">Esta acción no se puede deshacer.</p>
+        <div class="form-error" id="eliminarUsuarioError" role="alert"></div>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-ghost" data-close-modal="modalConfirmarEliminar">Cancelar</button>
+        <button type="button" class="btn btn-danger" id="btnConfirmarEliminar">Sí, eliminar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Crear/Editar categoría -->
+  <div class="modal" id="modalCategoria" style="display:none">
+    <div class="modal-backdrop" data-close-modal="modalCategoria"></div>
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 id="modalCategoriaTitulo">Crear categoría</h3>
+        <button class="modal-close" data-close-modal="modalCategoria" type="button" aria-label="Cerrar">✕</button>
+      </div>
+      <form id="formCategoria" class="modal-form">
+        <div class="form-group">
+          <label for="catNombre">Nombre</label>
+          <input type="text" id="catNombre" required maxlength="40" autocomplete="off">
+          <span class="form-hint" id="catIdHint"></span>
+        </div>
+        <div class="form-group">
+          <label>Icono</label>
+          <div class="icon-picker" id="iconPicker"></div>
+          <input type="hidden" id="catIcono" value="📦">
+        </div>
+        <div class="form-error" id="categoriaError" role="alert"></div>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-ghost" data-close-modal="modalCategoria">Cancelar</button>
+          <button type="submit" class="btn btn-primary" id="btnGuardarCategoria">Crear</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: Crear/Editar subcategoría -->
+  <div class="modal" id="modalSubcategoria" style="display:none">
+    <div class="modal-backdrop" data-close-modal="modalSubcategoria"></div>
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 id="modalSubcategoriaTitulo">Crear subcategoría</h3>
+        <button class="modal-close" data-close-modal="modalSubcategoria" type="button" aria-label="Cerrar">✕</button>
+      </div>
+      <form id="formSubcategoria" class="modal-form">
+        <div class="form-group">
+          <label for="subcatNombre">Nombre</label>
+          <input type="text" id="subcatNombre" required maxlength="40" autocomplete="off">
+          <span class="form-hint" id="subcatIdHint"></span>
+        </div>
+        <div class="form-group">
+          <label>Padre</label>
+          <div class="subcat-breadcrumb" id="subcatBreadcrumb"></div>
+          <span class="form-hint">La subcategoría heredará el icono de la categoría padre.</span>
+        </div>
+        <div class="form-error" id="subcategoriaError" role="alert"></div>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-ghost" data-close-modal="modalSubcategoria">Cancelar</button>
+          <button type="submit" class="btn btn-primary" id="btnGuardarSubcategoria">Crear</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: Confirmar eliminar subcategoría -->
+  <div class="modal modal-sm" id="modalEliminarSubcategoria" style="display:none">
+    <div class="modal-backdrop" data-close-modal="modalEliminarSubcategoria"></div>
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>¿Eliminar subcategoría?</h3>
+        <button class="modal-close" data-close-modal="modalEliminarSubcategoria" type="button" aria-label="Cerrar">✕</button>
+      </div>
+      <div class="modal-body">
+        <p>Vas a eliminar la subcategoría <strong id="eliminarSubcatNombre"></strong>.</p>
+        <div class="alert-warning">
+          <span>📁</span>
+          <div>
+            <strong>Los productos asignados a esta subcategoría pasarán a la categoría padre.</strong>
+            <p>(Aún no hay productos con subcategoría — este efecto se aplicará cuando se implemente la carga de productos por subcategoría.)</p>
+          </div>
+        </div>
+        <p class="modal-warning">Esta acción no se puede deshacer.</p>
+        <div class="form-error" id="eliminarSubcatError" role="alert"></div>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-ghost" data-close-modal="modalEliminarSubcategoria">Cancelar</button>
+        <button type="button" class="btn btn-danger" id="btnConfirmarEliminarSubcat">Sí, eliminar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Confirmar eliminar categoría -->
+  <div class="modal modal-sm" id="modalEliminarCategoria" style="display:none">
+    <div class="modal-backdrop" data-close-modal="modalEliminarCategoria"></div>
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>¿Eliminar categoría?</h3>
+        <button class="modal-close" data-close-modal="modalEliminarCategoria" type="button" aria-label="Cerrar">✕</button>
+      </div>
+      <div class="modal-body">
+        <p>Vas a eliminar la categoría <strong id="eliminarCatNombre"></strong>.</p>
+        <div id="eliminarCatItemsMsg" class="alert-warning" style="display:none">
+          <span>⚠️</span>
+          <div>
+            <strong>Esta categoría tiene <span id="eliminarCatCount">0</span> item(s).</strong>
+            <p>Si continúas, los items se moverán a <strong>"Sin categoría"</strong> (no se borrarán).</p>
+          </div>
+        </div>
+        <p class="modal-warning">Esta acción no se puede deshacer.</p>
+        <div class="form-error" id="eliminarCatError" role="alert"></div>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-ghost" data-close-modal="modalEliminarCategoria">Cancelar</button>
+        <button type="button" class="btn btn-danger" id="btnConfirmarEliminarCategoria">Sí, eliminar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Confirmar eliminar producto definitivamente -->
+  <div class="modal modal-sm" id="modalEliminarProductoDef" style="display:none">
+    <div class="modal-backdrop" data-close-modal="modalEliminarProductoDef"></div>
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>¿Eliminar producto definitivamente?</h3>
+        <button class="modal-close" data-close-modal="modalEliminarProductoDef" type="button" aria-label="Cerrar">✕</button>
+      </div>
+      <div class="modal-body">
+        <p>Vas a eliminar el producto <strong id="eliminarProdRef"></strong> de forma permanente.</p>
+        <p>Su imagen y todos sus datos se borrarán. <strong>No se puede deshacer.</strong></p>
+        <div class="form-error" id="eliminarProdError" role="alert"></div>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-ghost" data-close-modal="modalEliminarProductoDef">Cancelar</button>
+        <button type="button" class="btn btn-danger" id="btnConfirmarEliminarProdDef">Sí, eliminar</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <script src="admin.js?v=26"></script>
+</body>
+</html>

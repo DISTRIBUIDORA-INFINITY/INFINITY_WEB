@@ -1,0 +1,28 @@
+services:
+  web:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    container_name: infinity-web
+    ports:
+      - "6060:3000"
+    volumes:
+      # Persistencia: los cambios en JSON, imágenes, pedidos y videos se guardan en el host
+      - ./data:/app/data
+      - ./Imagenes:/app/Imagenes
+      - ./pedidos:/app/pedidos
+      - ./videos:/app/videos
+      # NOTA: el frontend va empaquetado dentro de la imagen, NO se monta como volumen.
+      # Así al hacer pull en otro PC se actualiza la interfaz automáticamente.
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      # ⚠️ Cambiar esta clave en producción por algo aleatorio y secreto
+      - SESSION_SECRET=cambia-esta-clave-en-produccion-12345
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:3000/api/infinity/categorias"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s

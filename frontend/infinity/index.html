@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#fafaff">
+  <title>Infinity — Catálogo</title>
+  <meta name="description" content="Catálogo Infinity — bolsos, termos, canecas, accesorios y más. Descubre tu estilo sin límites.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="estilos.css?v=14">
+</head>
+<body>
+
+  <!-- FONDO MESH GRADIENT ANIMADO -->
+  <div class="mesh-bg" aria-hidden="true">
+    <div class="mesh-blob mesh-blob-1"></div>
+    <div class="mesh-blob mesh-blob-2"></div>
+    <div class="mesh-blob mesh-blob-3"></div>
+  </div>
+
+  <!-- NAVBAR -->
+  <nav class="navbar">
+    <div class="nav-container">
+      <a href="#inicio" class="logo">
+        <img src="assets/logo.jpeg" alt="Infinity" class="logo-img">
+        <span class="logo-text">Infinity</span>
+      </a>
+      <div class="nav-links" id="navLinks">
+        <a href="#inicio">Inicio</a>
+        <a href="#catalogo">Catálogo</a>
+        <a href="admin/">Admin</a>
+      </div>
+      <a class="brand-switch-nav" href="/kohell/" aria-label="Ver catálogo Kohell" data-brand-switch>
+        <span class="brand-switch-nav-icon" aria-hidden="true">↔</span>
+        <span class="brand-switch-nav-text">Ver <strong>Kohell</strong></span>
+      </a>
+      <button class="nav-toggle" id="navToggle" aria-label="Abrir menú">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </nav>
+
+  <!-- HERO -->
+  <section class="hero" id="inicio">
+    <div class="hero-content">
+      <span class="hero-badge">✨ Nueva colección disponible</span>
+      <h1 class="hero-title">
+        Descubre tu <em>estilo</em><br>
+        <span class="hero-gradient-text">sin límites</span>
+      </h1>
+      <p class="hero-subtitle">
+        Belleza, accesorios, bolsos y mucho más. Productos curados para acompañarte en tu día a día.
+      </p>
+      <div class="hero-cta">
+        <a href="#catalogo" class="btn btn-primary">Ver catálogo</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- VIDEOS -->
+  <section class="redes-section" id="redes">
+    <div class="redes-grid" id="redesGrid"></div>
+  </section>
+
+  <!-- PRODUCTOS -->
+  <section class="productos-section" id="catalogo">
+    <div class="section-header">
+      <h2 class="section-title">Nuestro <em>catálogo</em></h2>
+      <p class="section-subtitle">Todos los productos en un solo lugar</p>
+    </div>
+
+    <div class="search-wrap">
+      <svg class="search-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+      </svg>
+      <input type="text" id="searchInput" class="search-input" placeholder="Buscar productos, categorías..." autocomplete="off">
+      <button class="search-clear" id="searchClear" aria-label="Limpiar búsqueda">✕</button>
+    </div>
+
+    <div class="filtros-tags" id="filtrosTags"></div>
+
+    <div id="contador" class="contador"></div>
+    <div id="productos" class="productos-grid"></div>
+    <div id="emptyState" class="empty-state" style="display:none">
+      <p>😕 No encontramos productos</p>
+      <button class="btn btn-ghost" id="btnLimpiar">Limpiar búsqueda</button>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer class="footer">
+    <div class="footer-content">
+      <div class="footer-brand">
+        <div class="logo">
+          <img src="assets/logo.jpeg" alt="Infinity" class="logo-img">
+          <span class="logo-text">Infinity</span>
+        </div>
+        <p>Productos para tu estilo de vida, sin límites.</p>
+      </div>
+      <div class="footer-links">
+        <a href="#inicio">Inicio</a>
+        <a href="#catalogo">Catálogo</a>
+        <a href="admin/">Admin</a>
+      </div>
+      <div class="footer-copy">
+        <p>© 2026 Infinity.</p>
+        <p>Catálogo web.</p>
+      </div>
+    </div>
+  </footer>
+
+  <!-- CARRITO FLOTANTE -->
+  <button class="cart-fab" id="cartFab" aria-label="Abrir carrito">
+    <span class="cart-fab-icon">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/>
+        <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>
+      </svg>
+    </span>
+    <span class="cart-fab-badge" id="cartBadge">0</span>
+  </button>
+
+  <!-- MODAL DEL CARRITO -->
+  <div class="modal" id="cartModal">
+    <div class="modal-backdrop" data-cart-close></div>
+    <div class="modal-content cart-modal-content">
+      <div class="modal-header">
+        <h2>🛒 Carrito</h2>
+        <button class="modal-close" data-cart-close>✕</button>
+      </div>
+      <div class="modal-body" id="cartBody">
+        <p class="cart-empty">El carrito está vacío.</p>
+      </div>
+      <div class="modal-footer">
+        <div class="cart-total" id="cartTotal">
+          <span>Total:</span>
+          <strong>$0</strong>
+        </div>
+        <div class="cart-actions">
+          <button class="btn btn-ghost" id="cartClearBtn">Vaciar carrito</button>
+          <button class="btn btn-primary" id="cartPdfBtn" disabled>📄 Generar PDF</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL FORMULARIO DE PEDIDO -->
+  <div class="modal" id="orderModal">
+    <div class="modal-backdrop" data-order-close></div>
+    <div class="modal-content order-modal-content">
+      <div class="modal-header">
+        <h2>📄 Datos del pedido</h2>
+        <button class="modal-close" data-order-close>✕</button>
+      </div>
+      <div class="modal-body">
+        <form id="orderForm" autocomplete="off">
+          <div class="form-group">
+            <label for="orderNombre">Nombre completo</label>
+            <input type="text" id="orderNombre" required placeholder="Tu nombre">
+          </div>
+          <div class="form-group">
+            <label for="orderCiudad">Ciudad</label>
+            <input type="text" id="orderCiudad" required placeholder="Tu ciudad">
+          </div>
+          <div class="form-group">
+            <label for="orderTelefono">Teléfono</label>
+            <input type="tel" id="orderTelefono" required placeholder="Tu teléfono">
+          </div>
+          <div class="form-group">
+            <label for="orderDireccion">Dirección</label>
+            <input type="text" id="orderDireccion" required placeholder="Tu dirección">
+          </div>
+          <div class="form-group">
+            <label for="orderVendedor">Vendedor</label>
+            <select id="orderVendedor" required>
+              <option value="">Selecciona un vendedor</option>
+            </select>
+          </div>
+          <div class="form-error" id="orderError" role="alert"></div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <div class="cart-actions">
+          <button class="btn btn-ghost" data-order-close>Cancelar</button>
+          <button class="btn btn-primary" id="orderSubmitBtn">
+            <span class="btn-text">✅ Generar pedido</span>
+            <span class="btn-spinner" style="display:none">⏳</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js?v=13"></script>
+</body>
+</html>
