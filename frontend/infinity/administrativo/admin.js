@@ -81,13 +81,15 @@ function imgUrl(img) {
   return `/Imagenes/${currentBrand}/${clean}`;
 }
 
-// Sincroniza el selector visual con la marca actual
+// Sincroniza el selector visual con la marca actual y aplica clase al body
 function syncBrandSwitcher() {
   document.querySelectorAll('.brand-switcher-btn').forEach(btn => {
     const active = btn.dataset.brand === currentBrand;
     btn.classList.toggle('active', active);
     btn.setAttribute('aria-selected', active ? 'true' : 'false');
   });
+  document.body.classList.remove('brand-infinity', 'brand-kohell');
+  document.body.classList.add(`brand-${currentBrand}`);
 }
 
 // Cambia de marca y recarga el estado (recarga la vista actual)

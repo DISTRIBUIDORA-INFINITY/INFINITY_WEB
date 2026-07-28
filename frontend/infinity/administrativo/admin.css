@@ -47,6 +47,93 @@ body {
   -webkit-font-smoothing: antialiased;
   line-height: 1.6;
   overflow-x: hidden;
+  transition: background var(--transition), color var(--transition);
+}
+
+/* ════════════════════════════════
+   MARCAS — fondo dinámico Infinity / Kohell
+════════════════════════════════ */
+body.brand-infinity {
+  --bg: #fffaf5;
+  --bg-soft: #fff1e6;
+  --violet: #f37e2e;
+  --violet-deep: #f37e2e;
+  --pink: #fdba8c;
+  --cyan: #ffd3b6;
+  --grad-primary: linear-gradient(135deg, #f37e2e 0%, #fdba8c 50%, #ffd3b6 100%);
+  --grad-text: linear-gradient(135deg, #f37e2e 0%, #f9a87c 50%, #fdba8c 100%);
+  --line: rgba(243, 126, 46, 0.4);
+  --line-strong: rgba(243, 126, 46, 0.6);
+  --shadow-sm: 0 4px 14px rgba(243, 126, 46, 0.16);
+  --shadow-md: 0 10px 40px rgba(243, 126, 46, 0.22);
+  --shadow-lg: 0 20px 60px rgba(243, 126, 46, 0.28);
+}
+
+body.brand-kohell {
+  --bg: #fff5f7;
+  --bg-soft: #fce4ec;
+  --white: #ffffff;
+  --ink: #2a1a1e;
+  --ink-soft: #6a4a52;
+  --ink-mute: #a78b95;
+  --violet: #e8a4b8;
+  --violet-deep: #d4a5b5;
+  --pink: #f9c0d0;
+  --cyan: #f7c6a5;
+  --grad-primary: linear-gradient(135deg, #e8a4b8 0%, #f9c0d0 50%, #f7c6a5 100%);
+  --grad-text: linear-gradient(135deg, #d4a5b5 0%, #e879a4 50%, #f0a48a 100%);
+  --line: rgba(212, 165, 181, 0.4);
+  --line-strong: rgba(212, 165, 181, 0.6);
+  --shadow-sm: 0 4px 14px rgba(212, 165, 181, 0.18);
+  --shadow-md: 0 10px 40px rgba(212, 165, 181, 0.24);
+  --shadow-lg: 0 20px 60px rgba(212, 165, 181, 0.30);
+}
+
+body.brand-kohell .brand-switcher-btn[data-brand="kohell"].active,
+body.brand-kohell .nav-item.active,
+body.brand-kohell .btn-primary {
+  background: var(--grad-primary);
+}
+
+body.brand-kohell .mesh-blob-1 { background: #e8a4b8; }
+body.brand-kohell .mesh-blob-2 { background: #f9c0d0; }
+body.brand-kohell .mesh-blob-3 { background: #f7c6a5; }
+
+body.brand-kohell .nav-item:hover,
+body.brand-kohell .btn-ghost:hover {
+  background: var(--bg-soft);
+  border-color: var(--violet);
+  color: var(--violet-deep);
+}
+
+body.brand-kohell .tag.active,
+body.brand-kohell .dropzone.dragover,
+body.brand-kohell .stat-card:hover .stat-icon {
+  background: var(--grad-primary);
+}
+
+body.brand-kohell .view-section-title,
+body.brand-kohell .subsection-title,
+body.brand-kohell .login-title em,
+body.brand-kohell .greeting-title em {
+  background: var(--grad-text);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+body.brand-kohell .login-badge,
+body.brand-kohell .admin-tag,
+body.brand-kohell .producto-precio,
+body.brand-kohell .upload-counter strong,
+body.brand-kohell .stat-value,
+body.brand-kohell .form-error {
+  color: var(--violet-deep);
+}
+
+body.brand-kohell .login-title em,
+body.brand-kohell .logo-symbol {
+  background: var(--grad-text);
 }
 
 a { color: inherit; text-decoration: none; }

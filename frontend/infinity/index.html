@@ -146,6 +146,33 @@
     </div>
   </div>
 
+  <!-- MODAL AMPLIADO DE IMAGEN -->
+  <div class="modal" id="imageModal">
+    <div class="modal-backdrop" data-image-close></div>
+    <div class="modal-content image-modal-content">
+      <button class="modal-close" data-image-close>✕</button>
+      <div class="image-modal-body">
+        <div class="image-modal-pic">
+          <img src="" alt="" id="imageModalImg">
+        </div>
+        <div class="image-modal-info">
+          <span class="image-modal-cat" id="imageModalCat"></span>
+          <h3 class="image-modal-name" id="imageModalName"></h3>
+          <p class="image-modal-desc" id="imageModalDesc"></p>
+          <div class="image-modal-price" id="imageModalPrice"></div>
+          <div class="image-modal-add">
+            <div class="qty-stepper" id="imageModalQtyStepper">
+              <button type="button" class="qty-stepper-btn" data-qty-dec aria-label="Disminuir cantidad">−</button>
+              <input type="number" class="qty-stepper-input" id="imageModalQty" value="1" min="1" max="99" aria-label="Cantidad">
+              <button type="button" class="qty-stepper-btn" data-qty-inc aria-label="Aumentar cantidad">+</button>
+            </div>
+            <button type="button" class="btn btn-primary" id="imageModalAddBtn">+ Agregar al carrito</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- MODAL FORMULARIO DE PEDIDO -->
   <div class="modal" id="orderModal">
     <div class="modal-backdrop" data-order-close></div>

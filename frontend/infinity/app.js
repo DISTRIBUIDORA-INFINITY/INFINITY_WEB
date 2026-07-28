@@ -287,7 +287,7 @@ function renderProductos() {
       : '';
     return `
       <article class="producto-card" style="animation-delay: ${i * 0.04}s">
-        <div class="producto-img">
+        <div class="producto-img" data-img-open data-ref="${p.ref}">
           <span class="producto-cat">${cat ? cat.nombre : p.cat}</span>
           <img src="${escapeHtml(imgSrc)}" alt="${escapeHtml(nombre)}" loading="lazy"
                onerror="this.remove(); this.parentElement.classList.add('img-fallback');">
@@ -298,8 +298,11 @@ function renderProductos() {
           ${desc ? `<p class="producto-desc">${escapeHtml(desc)}</p>` : ''}
           <div class="producto-precio">${precio}</div>
           <div class="producto-card-add">
-            <input type="number" class="producto-card-add-qty" value="1" min="1" max="99"
-                   data-ref="${p.ref}" aria-label="Cantidad">
+            <div class="qty-stepper producto-card-qty" data-ref="${p.ref}">
+              <button type="button" class="qty-stepper-btn" data-qty-dec aria-label="Disminuir cantidad">−</button>
+              <input type="number" class="qty-stepper-input" value="1" min="1" max="99" aria-label="Cantidad">
+              <button type="button" class="qty-stepper-btn" data-qty-inc aria-label="Aumentar cantidad">+</button>
+            </div>
             <button class="producto-card-add-btn" data-ref="${p.ref}"
                     data-nombre="${escapeHtml(nombre)}"
                     data-precio="${p.precio ?? ''}">
@@ -617,7 +620,55 @@ async function enviarPedido() {
 }
 
 // Wire add-to-cart buttons después de renderizar productos
+function agregarProductoAlCarrito(ref, nombre, precio, cantidad = 1) {
+  if (!cantidad || cantidad < 1) return false;
+
+  if (!precio || isNaN(precio)) {
+    return false;
+  }
+
+  const existente = carrito.find(i => i.ref === ref);
+  if (existente) {
+    existente.cantidad += cantidad;
+  } else {
+    carrito.push({ ref, nombre, precio, cantidad, marca: CURRENT_BRAND });
+  }
+
+  guardarCarrito();
+  actualizarBadge();
+  return true;
+}
+
 function wireAddToCart() {
+  document.querySelectorAll('.producto-card .qty-stepper').forEach(stepper => {
+    if (stepper.dataset.qtyWired) return;
+    stepper.dataset.qtyWired = '1';
+
+    const input = stepper.querySelector('.qty-stepper-input');
+    const decBtn = stepper.querySelector('[data-qty-dec]');
+    const incBtn = stepper.querySelector('[data-qty-inc]');
+
+    const clamp = () => {
+      let v = parseInt(input.value, 10) || 1;
+      if (v < 1) v = 1;
+      if (v > 99) v = 99;
+      input.value = v;
+    };
+
+    decBtn.addEventListener('click', () => {
+      let v = parseInt(input.value, 10) || 1;
+      if (v > 1) input.value = v - 1;
+    });
+
+    incBtn.addEventListener('click', () => {
+      let v = parseInt(input.value, 10) || 1;
+      if (v < 99) input.value = v + 1;
+    });
+
+    input.addEventListener('change', clamp);
+    input.addEventListener('blur', clamp);
+  });
+
   document.querySelectorAll('.producto-card-add-btn').forEach(btn => {
     if (btn.dataset.cartWired) return;
     btn.dataset.cartWired = '1';
@@ -626,13 +677,12 @@ function wireAddToCart() {
       const ref     = btn.dataset.ref;
       const nombre  = btn.dataset.nombre;
       const precio  = parseFloat(btn.dataset.precio);
-      const qtyInput = document.querySelector(`.producto-card-add-qty[data-ref="${ref}"]`);
-      const cantidad = qtyInput ? parseInt(qtyInput.value, 10) : 1;
+      const stepper = btn.closest('.producto-card-add')?.querySelector('.qty-stepper');
+      const input   = stepper ? stepper.querySelector('.qty-stepper-input') : null;
+      const cantidad = input ? parseInt(input.value, 10) : 1;
 
-      if (!cantidad || cantidad < 1) return;
-
-      // Mostrar feedback si el producto no tiene precio
-      if (!precio || isNaN(precio)) {
+      const ok = agregarProductoAlCarrito(ref, nombre, precio, cantidad);
+      if (!ok) {
         const orig = btn.textContent;
         btn.textContent = '⚠ Sin precio';
         btn.style.opacity = '0.7';
@@ -640,21 +690,98 @@ function wireAddToCart() {
         return;
       }
 
-      const existente = carrito.find(i => i.ref === ref);
-      if (existente) {
-        existente.cantidad += cantidad;
-      } else {
-        carrito.push({ ref, nombre, precio, cantidad, marca: CURRENT_BRAND });
-      }
-
-      if (qtyInput) qtyInput.value = 1;
-      guardarCarrito();
-      actualizarBadge();
-
+      if (input) input.value = 1;
       const original = btn.textContent;
       btn.textContent = '✓ Agregado';
       setTimeout(() => { btn.textContent = original; }, 1200);
     });
+  });
+}
+
+let currentImageModalProduct = null;
+
+function setupImageModal() {
+  const modal      = document.getElementById('imageModal');
+  const img        = document.getElementById('imageModalImg');
+  const catEl      = document.getElementById('imageModalCat');
+  const nameEl     = document.getElementById('imageModalName');
+  const descEl     = document.getElementById('imageModalDesc');
+  const priceEl    = document.getElementById('imageModalPrice');
+  const qtyInput   = document.getElementById('imageModalQty');
+  const addBtn     = document.getElementById('imageModalAddBtn');
+
+  document.querySelectorAll('[data-image-close]').forEach(el => {
+    el.addEventListener('click', () => cerrarModal('imageModal'));
+  });
+
+  document.getElementById('productos').addEventListener('click', e => {
+    const opener = e.target.closest('[data-img-open]');
+    if (!opener) return;
+
+    const ref = opener.dataset.ref;
+    const p = productos.find(x => x.ref === ref);
+    if (!p) return;
+
+    currentImageModalProduct = p;
+    const cat = categorias.find(c => c.id === p.cat);
+    const nombre = p.nombre || p.ref || 'Sin nombre';
+    const desc   = p.desc || '';
+    const precio = (p.precio !== undefined && p.precio !== null && p.precio !== '')
+      ? `$${Number(p.precio).toLocaleString('es-CO')}`
+      : '—';
+    const imgSrc = p.img
+      ? (p.img.startsWith('/') ? p.img : (/^(infinity|kohell)\//.test(p.img) ? `/Imagenes/${p.img}` : `/Imagenes/infinity/${p.img}`))
+      : '';
+
+    img.src = escapeHtml(imgSrc);
+    img.alt = escapeHtml(nombre);
+    catEl.textContent = cat ? cat.nombre : (p.cat || '');
+    nameEl.textContent = nombre;
+    descEl.textContent = desc;
+    descEl.style.display = desc ? 'block' : 'none';
+    priceEl.textContent = precio;
+    qtyInput.value = 1;
+
+    addBtn.disabled = !p.precio;
+    addBtn.textContent = p.precio ? '+ Agregar al carrito' : 'Sin precio';
+
+    abrirModal('imageModal');
+  });
+
+  const qtyDec = document.getElementById('imageModalQtyStepper')?.querySelector('[data-qty-dec]');
+  const qtyInc = document.getElementById('imageModalQtyStepper')?.querySelector('[data-qty-inc]');
+
+  const clampQty = () => {
+    let v = parseInt(qtyInput.value, 10) || 1;
+    if (v < 1) v = 1;
+    if (v > 99) v = 99;
+    qtyInput.value = v;
+  };
+
+  qtyDec?.addEventListener('click', () => {
+    let v = parseInt(qtyInput.value, 10) || 1;
+    if (v > 1) qtyInput.value = v - 1;
+  });
+
+  qtyInc?.addEventListener('click', () => {
+    let v = parseInt(qtyInput.value, 10) || 1;
+    if (v < 99) qtyInput.value = v + 1;
+  });
+
+  qtyInput.addEventListener('change', clampQty);
+  qtyInput.addEventListener('blur', clampQty);
+
+  addBtn.addEventListener('click', () => {
+    if (!currentImageModalProduct) return;
+    const p = currentImageModalProduct;
+    const cantidad = parseInt(qtyInput.value, 10) || 1;
+    const ok = agregarProductoAlCarrito(p.ref, p.nombre || p.ref, parseFloat(p.precio), cantidad);
+    if (ok) {
+      qtyInput.value = 1;
+      const original = addBtn.textContent;
+      addBtn.textContent = '✓ Agregado';
+      setTimeout(() => { addBtn.textContent = original; }, 1200);
+    }
   });
 }
 
@@ -665,6 +792,7 @@ document.addEventListener('DOMContentLoaded', () => {
   setupSearch();
   setupNav();
   setupCartModals();
+  setupImageModal();
   cargarDatos();
   cargarRedes();
 });
