@@ -286,7 +286,7 @@ function renderProductos() {
     const imgSrc = p.img
       ? (p.img.startsWith('/') ? p.img : (/^(infinity|kohell)\//.test(p.img) ? `/Imagenes/${p.img}` : `/Imagenes/kohell/${p.img}`))
       : '';
-    const mostrarRef = Boolean(desc && ref);
+    const mostrarRef = Boolean(ref);
     return `
       <article class="producto-card" style="animation-delay: ${i * 0.04}s">
         <div class="producto-img">

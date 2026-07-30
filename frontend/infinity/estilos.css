@@ -1053,6 +1053,12 @@ section {
   line-height: 1.65;
 }
 
+.image-modal-ref {
+  font-size: 0.85rem;
+  color: var(--ink-mute);
+  line-height: 1.4;
+}
+
 .image-modal-price {
   font-size: 2rem;
   font-weight: 800;

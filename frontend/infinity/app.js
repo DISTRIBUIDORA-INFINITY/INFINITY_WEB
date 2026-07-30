@@ -286,7 +286,7 @@ function renderProductos() {
     const imgSrc = p.img
       ? (p.img.startsWith('/') ? p.img : (/^(infinity|kohell)\//.test(p.img) ? `/Imagenes/${p.img}` : `/Imagenes/infinity/${p.img}`))
       : '';
-    const mostrarRef = Boolean(desc && ref);
+    const mostrarRef = Boolean(ref);
     return `
       <article class="producto-card" style="animation-delay: ${i * 0.04}s">
         <div class="producto-img" data-img-open data-ref="${p.ref}">
@@ -729,6 +729,7 @@ function setupImageModal() {
     const cat = categorias.find(c => c.id === p.cat);
     const nombre = p.nombre || p.ref || 'Sin nombre';
     const desc   = p.desc || '';
+    const ref    = p.ref || '';
     const precio = (p.precio !== undefined && p.precio !== null && p.precio !== '')
       ? `$${Number(p.precio).toLocaleString('es-CO')}`
       : '—';
@@ -742,6 +743,13 @@ function setupImageModal() {
     nameEl.textContent = nombre;
     descEl.textContent = desc;
     descEl.style.display = desc ? 'block' : 'none';
+
+    const refEl = document.getElementById('imageModalRef');
+    if (refEl) {
+      refEl.textContent = ref;
+      refEl.style.display = ref ? 'block' : 'none';
+    }
+
     priceEl.textContent = precio;
     qtyInput.value = 1;
 
