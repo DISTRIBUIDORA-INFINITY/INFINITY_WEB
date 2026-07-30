@@ -117,6 +117,7 @@ function getNodo(catId, niveles) {
 // ════════════════════════════════
 function renderTags() {
   const cont = document.getElementById('filtrosTags');
+  if (!cont) return;
   cont.innerHTML = '';
 
   // ——— Nivel 0: Categorías ———
@@ -234,16 +235,25 @@ function renderProductos() {
   const grid     = document.getElementById('productos');
   const empty    = document.getElementById('emptyState');
   const contador = document.getElementById('contador');
+  if (!grid || !empty || !contador) return;
 
   let filtrados = productos.filter(p =>
+    p &&
     p.cat &&
     p.cat !== 'sin-categoria' &&
     (!p.img || !p.img.startsWith('agotados/'))
   );
 
   if (catActiva !== 'todos') {
+    const catActivaObj = categorias.find(c => c.id === catActiva);
+    const catTieneSubcats = catActivaObj &&
+      Array.isArray(catActivaObj.subcategorias) &&
+      catActivaObj.subcategorias.length > 0;
+
     filtrados = filtrados.filter(p => {
       if (p.cat !== catActiva) return false;
+      // Si la categoría no tiene subcategorías, mostrar todos sus productos
+      if (!catTieneSubcats) return true;
       // Validar que la cadena de sub coincida
       const sub = Array.isArray(p.sub) ? p.sub : [];
       for (let i = 0; i < subActiva.length; i++) {
