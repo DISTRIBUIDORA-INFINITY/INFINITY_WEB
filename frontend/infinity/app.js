@@ -279,12 +279,14 @@ function renderProductos() {
     const cat = categorias.find(c => c.id === p.cat);
     const nombre = p.nombre || p.ref || 'Sin nombre';
     const desc   = p.desc || '';
+    const ref    = p.ref || '';
     const precio = (p.precio !== undefined && p.precio !== null && p.precio !== '')
       ? `$${Number(p.precio).toLocaleString('es-CO')}`
       : '—';
     const imgSrc = p.img
       ? (p.img.startsWith('/') ? p.img : (/^(infinity|kohell)\//.test(p.img) ? `/Imagenes/${p.img}` : `/Imagenes/infinity/${p.img}`))
       : '';
+    const mostrarRef = Boolean(desc && ref);
     return `
       <article class="producto-card" style="animation-delay: ${i * 0.04}s">
         <div class="producto-img" data-img-open data-ref="${p.ref}">
@@ -296,6 +298,7 @@ function renderProductos() {
         <div class="producto-info">
           <h3 class="producto-nombre">${escapeHtml(nombre)}</h3>
           ${desc ? `<p class="producto-desc">${escapeHtml(desc)}</p>` : ''}
+          ${mostrarRef ? `<div class="producto-ref">${escapeHtml(ref)}</div>` : ''}
           <div class="producto-precio">${precio}</div>
           <div class="producto-card-add">
             <div class="qty-stepper producto-card-qty" data-ref="${p.ref}">
