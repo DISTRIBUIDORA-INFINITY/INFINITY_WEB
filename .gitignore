@@ -43,6 +43,11 @@ Thumbs.db
 .backup-cart-*/
 
 # ════════════════════════════════
+# MANUAL DE ENTREGA LOCAL (contiene credenciales)
+# ════════════════════════════════
+MANUAL_ENTREGA.txt
+
+# ════════════════════════════════
 # DATOS PERSISTENTES (volúmenes Docker)
 # ════════════════════════════════
 data/

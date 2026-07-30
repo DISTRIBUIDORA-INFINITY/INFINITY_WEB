@@ -111,6 +111,18 @@ docker compose up --build -d
 
 Con eso se actualiza el backend y los tres frontales (landing, infinity, kohell, admin).
 
+## Credenciales por defecto
+
+Las credenciales actuales se encuentran en `data/contraseñas.json`. A modo de referencia, los usuarios configurados son:
+
+| Usuario | Contraseña | Rol | Permisos |
+|---|---|---|---|
+| `admin` | `123` | admin | Acceso total |
+| `juan` | `123456` | editor | productos, agotados |
+| `juan carlos` | `123456` | vendedor | descargas |
+
+> Cambia estas contraseñas desde el panel de usuarios lo antes posible. Actualmente se almacenan en texto plano; está previsto migrar a bcrypt.
+
 ## Datos importantes: qué se guarda y qué no
 
 Lo que **sí** se conserva al reconstruir el contenedor (está en volúmenes):
@@ -181,8 +193,16 @@ Lo que **no** se conserva (va dentro de la imagen):
 ### El admin no entra
 
 - Si la carpeta `data/` estaba vacía, se crea automáticamente el usuario `admin`/`admin`.
-- Si ya existe `data/contraseñas.json`, ese archivo tiene prioridad.
+- Si ya existe `data/contraseñas.json`, ese archivo tiene prioridad. Las credenciales reales son las que figuren allí.
 - Las sesiones se limpian a las 00:00 hora Colombia; si entras después de medianoche, te pedirá login de nuevo.
+
+### Pantalla en blanco después de desplegar cambios
+
+Si una página se queda en blanco tras desplegar cambios, revisa que las versiones `?v=...` de `app.js`, `admin.js` y `admin.css` estén actualizadas en los `index.html`. Las actuales son:
+
+- `frontend/infinity/index.html` → `app.js?v=18`
+- `frontend/kohell/index.html` → `app.js?v=3`
+- `frontend/infinity/administrativo/index.html` → `admin.css?v=25`, `admin.js?v=27`
 
 ### Las imágenes o pedidos no aparecen
 
@@ -192,6 +212,16 @@ Lo que **no** se conserva (va dentro de la imagen):
 ### Kohell no muestra productos
 
 - Kohell arranca con `data/kohell/productos.json = []`. Hay que entrar al admin y subir productos con la marca "Kohell" seleccionada en el selector.
+
+### Categorías que no aparecen
+
+- Una categoría se oculta automáticamente cuando se queda sin productos o cuando todos sus productos están agotados.
+- Un producto se considera agotado cuando su imagen está ubicada en la carpeta `agotados/` de la marca.
+
+### Venta mínima
+
+- Cada producto puede tener un valor de **venta mínima** (`ventaMinima`).
+- El catálogo y el carrito respetan este valor: se incrementa/decrementa en múltiplos de la venta mínima, y no se permite una cantidad inferior.
 
 ## Notas de seguridad
 
