@@ -471,10 +471,12 @@ function renderCarritoModal() {
       const esInfinity = item.marca === 'infinity';
       const badgeClass = esInfinity ? 'cart-item-badge cart-item-badge-infinity' : 'cart-item-badge cart-item-badge-kohell';
       const badgeText  = esInfinity ? '∞ Infinity' : 'Kohell';
-      return `<div class="cart-item">
+      const vm = normalizarVentaMinima(item.ventaMinima);
+      const vmLabel = vm > 1 ? ` · mín. ${vm}` : '';
+      return `<div class="cart-item" data-cart-vm="${vm}">
         <div class="cart-item-info">
           <div class="cart-item-name">${escapeHtml(item.nombre)}</div>
-          <div class="cart-item-ref">${escapeHtml(item.ref)} — $${(item.precio || 0).toLocaleString('es-CO')} c/u</div>
+          <div class="cart-item-ref">${escapeHtml(item.ref)} — $${(item.precio || 0).toLocaleString('es-CO')} c/u${vmLabel}</div>
         </div>
         <div class="cart-item-controls">
           <button class="cart-item-qty-btn" data-cart-dec="${idx}">−</button>
@@ -491,7 +493,8 @@ function renderCarritoModal() {
   body.querySelectorAll('[data-cart-inc]').forEach(btn => {
     btn.addEventListener('click', () => {
       const idx = parseInt(btn.dataset.cartInc, 10);
-      carrito[idx].cantidad++;
+      const vm = normalizarVentaMinima(carrito[idx].ventaMinima);
+      carrito[idx].cantidad += vm;
       guardarCarrito();
       renderCarritoModal();
       actualizarBadge();
@@ -501,8 +504,9 @@ function renderCarritoModal() {
   body.querySelectorAll('[data-cart-dec]').forEach(btn => {
     btn.addEventListener('click', () => {
       const idx = parseInt(btn.dataset.cartDec, 10);
-      if (carrito[idx].cantidad > 1) {
-        carrito[idx].cantidad--;
+      const vm = normalizarVentaMinima(carrito[idx].ventaMinima);
+      if (carrito[idx].cantidad > vm) {
+        carrito[idx].cantidad -= vm;
       } else {
         carrito.splice(idx, 1);
       }
