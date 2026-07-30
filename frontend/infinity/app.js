@@ -59,8 +59,12 @@ async function cargarDatos() {
     productos  = await resProds.json();
 
     cargando = false;
-    renderTags();
-    renderProductos();
+    try {
+      renderTags();
+      renderProductos();
+    } catch (err) {
+      console.error('Error renderizando catálogo:', err);
+    }
   } catch (err) {
     console.error('Error cargando datos:', err);
     cargando = false;
@@ -415,6 +419,7 @@ function limpiarCarrito() {
 function actualizarBadge() {
   const total = carrito.reduce((s, i) => s + i.cantidad, 0);
   const badge = document.getElementById('cartBadge');
+  if (!badge) return;
   badge.textContent = total;
   badge.style.display = total > 0 ? 'flex' : 'none';
 }
@@ -509,7 +514,14 @@ function cerrarModal(id) {
 
 function setupCartModals() {
   // FAB → abrir carrito
-  document.getElementById('cartFab').addEventListener('click', () => {
+  const cartFab = document.getElementById('cartFab');
+  const cartClearBtn = document.getElementById('cartClearBtn');
+  const cartPdfBtn = document.getElementById('cartPdfBtn');
+  const orderSubmitBtn = document.getElementById('orderSubmitBtn');
+  const orderForm = document.getElementById('orderForm');
+  if (!cartFab || !cartClearBtn || !cartPdfBtn || !orderSubmitBtn || !orderForm) return;
+
+  cartFab.addEventListener('click', () => {
     renderCarritoModal();
     abrirModal('cartModal');
   });
@@ -722,6 +734,7 @@ function setupImageModal() {
   const priceEl    = document.getElementById('imageModalPrice');
   const qtyInput   = document.getElementById('imageModalQty');
   const addBtn     = document.getElementById('imageModalAddBtn');
+  if (!modal || !img || !catEl || !nameEl || !descEl || !priceEl || !qtyInput || !addBtn) return;
 
   document.querySelectorAll('[data-image-close]').forEach(el => {
     el.addEventListener('click', () => cerrarModal('imageModal'));
@@ -739,7 +752,6 @@ function setupImageModal() {
     const cat = categorias.find(c => c.id === p.cat);
     const nombre = p.nombre || p.ref || 'Sin nombre';
     const desc   = p.desc || '';
-    const ref    = p.ref || '';
     const precio = (p.precio !== undefined && p.precio !== null && p.precio !== '')
       ? `$${Number(p.precio).toLocaleString('es-CO')}`
       : '—';
@@ -756,8 +768,8 @@ function setupImageModal() {
 
     const refEl = document.getElementById('imageModalRef');
     if (refEl) {
-      refEl.textContent = ref;
-      refEl.style.display = ref ? 'block' : 'none';
+      refEl.textContent = p.ref || '';
+      refEl.style.display = p.ref ? 'block' : 'none';
     }
 
     priceEl.textContent = precio;
@@ -810,12 +822,16 @@ function setupImageModal() {
 // INIT
 // ════════════════════════════════
 document.addEventListener('DOMContentLoaded', () => {
-  setupSearch();
-  setupNav();
-  setupCartModals();
-  setupImageModal();
-  cargarDatos();
-  cargarRedes();
+  try {
+    setupSearch();
+    setupNav();
+    setupCartModals();
+    setupImageModal();
+    cargarDatos();
+    cargarRedes();
+  } catch (err) {
+    console.error('Error inicializando app:', err);
+  }
 });
 
 
