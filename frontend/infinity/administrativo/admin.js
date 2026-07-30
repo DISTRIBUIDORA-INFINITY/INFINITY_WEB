@@ -1828,6 +1828,47 @@ let busquedaProductos   = '';   // texto de la barra de búsqueda
 let productosCache      = [];   // últimos productos cargados (para filtrar en cliente)
 let categoriasCache     = [];   // últimas categorías cargadas (para iconos)
 
+async function guardarVentaMinima(ref, inputId) {
+  const input = document.getElementById(inputId);
+  const btn   = document.querySelector(`button[data-vm-btn="${escapeAttr(ref)}"]`);
+  if (!input) return;
+
+  let vm = parseInt(input.value, 10);
+  if (Number.isNaN(vm) || vm < 1) vm = 1;
+  input.value = vm;
+
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = '⏳';
+  }
+
+  try {
+    const res  = await fetch(api(`/productos/${encodeURIComponent(ref)}/venta-minima`), {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ventaMinima: vm }),
+      credentials: 'include'
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Error al guardar');
+
+    // Actualizar cache local
+    const p = productosCache.find(x => x.ref === ref);
+    if (p) p.ventaMinima = vm;
+
+    if (btn) {
+      btn.textContent = '✓';
+      setTimeout(() => { btn.textContent = '💾'; btn.disabled = false; }, 1200);
+    }
+  } catch (err) {
+    alert('Error guardando venta mínima: ' + err.message);
+    if (btn) {
+      btn.textContent = '💾';
+      btn.disabled = false;
+    }
+  }
+}
+
 async function cargarProductosDisponibles() {
   const grid = document.getElementById('productosListGrid');
   if (!grid) return;
@@ -1900,6 +1941,10 @@ function renderProductosDisponibles() {
     const cat = categorias.find(c => c.id === p.cat);
     const icon = cat ? cat.icono : '📦';
     const imgSrc = imgUrl(p.img);
+    const vm = (p.ventaMinima && !Number.isNaN(parseInt(p.ventaMinima, 10)) && parseInt(p.ventaMinima, 10) >= 1)
+      ? parseInt(p.ventaMinima, 10)
+      : 1;
+    const inputId = `vm-${escapeAttr(p.ref)}`;
     return `
       <div class="producto-item">
         <div class="producto-thumb-wrap">
@@ -1910,6 +1955,15 @@ function renderProductosDisponibles() {
         <div class="producto-info">
           <div class="producto-ref">${escapeHtml(p.ref)}</div>
           <div class="producto-cat-tag">${icon} ${escapeHtml(cat ? cat.nombre : p.cat)}</div>
+          <div class="producto-venta-minima">
+            <label for="${inputId}">Venta mínima</label>
+            <input type="number" id="${inputId}" value="${vm}" min="1" max="999" step="1"
+                   onchange="guardarVentaMinima('${escapeAttr(p.ref)}', '${inputId}')"
+                   onkeydown="if(event.key==='Enter') guardarVentaMinima('${escapeAttr(p.ref)}', '${inputId}')">
+            <button type="button" class="btn-icon btn-icon-save" data-vm-btn="${escapeAttr(p.ref)}"
+                    onclick="guardarVentaMinima('${escapeAttr(p.ref)}', '${inputId}')"
+                    title="Guardar venta mínima">💾</button>
+          </div>
         </div>
         <div class="producto-actions">
           <button class="btn-icon btn-icon-danger" onclick="abrirAgotarProducto('${escapeAttr(p.ref)}')" title="Marcar como agotado" type="button">🚫</button>

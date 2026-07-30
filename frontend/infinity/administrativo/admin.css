@@ -2215,6 +2215,53 @@ select {
   font-size: 0.85rem;
 }
 
+.producto-venta-minima {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.producto-venta-minima label {
+  font-size: 0.72rem;
+  color: var(--ink-mute);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.producto-venta-minima input {
+  width: 58px;
+  padding: 5px 6px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--ink);
+  background: var(--bg-soft);
+  border: 1.5px solid var(--line);
+  border-radius: var(--radius-sm);
+  text-align: center;
+  outline: none;
+  transition: border-color var(--transition), box-shadow var(--transition);
+}
+
+.producto-venta-minima input:focus {
+  border-color: var(--violet);
+  box-shadow: 0 0 0 3px rgba(167, 139, 250, 0.15);
+}
+
+.producto-venta-minima .btn-icon-save {
+  width: 26px;
+  height: 26px;
+  font-size: 0.8rem;
+  border-radius: 6px;
+  background: var(--bg-soft);
+  border: 1.5px solid var(--line);
+}
+
+.producto-venta-minima .btn-icon-save:hover {
+  background: var(--violet);
+  border-color: var(--violet);
+}
+
 .productos-empty {
   grid-column: 1 / -1;
   text-align: center;

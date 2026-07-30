@@ -116,6 +116,36 @@ function getNodo(catId, niveles) {
   return nodo;
 }
 
+// Devuelve true si un producto NO está agotado.
+function productoDisponible(p) {
+  return p && p.cat && p.cat !== 'sin-categoria' && (!p.img || !p.img.replace(/^(infinity|kohell)\//, '').startsWith('agotados/'));
+}
+
+// Verifica si una categoría (o alguna de sus subcategorías) tiene al menos un producto disponible.
+function categoriaTieneProductosVisibles(cat) {
+  if (!cat || cat.id === 'sin-categoria') return false;
+
+  // Productos directamente asignados a la categoría
+  if (productos.some(p => productoDisponible(p) && p.cat === cat.id)) return true;
+
+  // Bajar recursivamente por subcategorías
+  if (Array.isArray(cat.subcategorias) && cat.subcategorias.length > 0) {
+    return cat.subcategorias.some(sub => subcategoriaTieneProductosVisibles(cat.id, [], sub));
+  }
+
+  return false;
+}
+
+function subcategoriaTieneProductosVisibles(catId, previos, sub) {
+  if (productosEnNivel(catId, previos, sub.id).length > 0) return true;
+
+  if (Array.isArray(sub.subcategorias) && sub.subcategorias.length > 0) {
+    return sub.subcategorias.some(ss => subcategoriaTieneProductosVisibles(catId, [...previos, sub.id], ss));
+  }
+
+  return false;
+}
+
 // ════════════════════════════════
 // RENDER TAGS FILTROS (multinivel)
 // ════════════════════════════════
@@ -125,7 +155,15 @@ function renderTags() {
   cont.innerHTML = '';
 
   // ——— Nivel 0: Categorías ———
-  const catsVisibles = categorias.filter(c => c.id !== 'sin-categoria');
+  const catsVisibles = categorias.filter(c =>
+    c.id !== 'sin-categoria' && categoriaTieneProductosVisibles(c)
+  );
+
+  // Si la categoría activa quedó sin productos disponibles, volver a "Todos"
+  if (catActiva !== 'todos' && !catsVisibles.some(c => c.id === catActiva)) {
+    catActiva = 'todos';
+    subActiva = [];
+  }
   const nivel0 = document.createElement('div');
   nivel0.className = 'filtros-tags filtros-nivel';
   nivel0.innerHTML =
@@ -301,6 +339,7 @@ function renderProductos() {
       ? (p.img.startsWith('/') ? p.img : (/^(infinity|kohell)\//.test(p.img) ? `/Imagenes/${p.img}` : `/Imagenes/infinity/${p.img}`))
       : '';
     const mostrarRef = Boolean(ref);
+    const vm = normalizarVentaMinima(p.ventaMinima);
     return `
       <article class="producto-card" style="animation-delay: ${i * 0.04}s">
         <div class="producto-img" data-img-open data-ref="${p.ref}">
@@ -314,15 +353,18 @@ function renderProductos() {
           ${desc ? `<p class="producto-desc">${escapeHtml(desc)}</p>` : ''}
           ${mostrarRef ? `<div class="producto-ref">${escapeHtml(ref)}</div>` : ''}
           <div class="producto-precio">${precio}</div>
+          ${vm > 1 ? `<div class="producto-venta-minima-tag">Venta mínima: ${vm} unidades</div>` : ''}
           <div class="producto-card-add">
-            <div class="qty-stepper producto-card-qty" data-ref="${p.ref}">
+            <div class="qty-stepper producto-card-qty" data-ref="${p.ref}" data-vm="${vm}">
               <button type="button" class="qty-stepper-btn" data-qty-dec aria-label="Disminuir cantidad">−</button>
-              <input type="number" class="qty-stepper-input" value="1" min="1" max="99" aria-label="Cantidad">
+              <input type="number" class="qty-stepper-input" value="${vm}" min="${vm}" max="99" step="${vm}" aria-label="Cantidad">
               <button type="button" class="qty-stepper-btn" data-qty-inc aria-label="Aumentar cantidad">+</button>
             </div>
             <button class="producto-card-add-btn" data-ref="${p.ref}"
                     data-nombre="${escapeHtml(nombre)}"
-                    data-precio="${p.precio ?? ''}">
+                    data-precio="${p.precio ?? ''}"
+                    data-venta-minima="${vm}"
+                    ${p.precio ? '' : 'disabled'}>
               + Agregar
             </button>
           </div>
@@ -644,8 +686,21 @@ async function enviarPedido() {
   }
 }
 
+function normalizarVentaMinima(vm) {
+  const n = parseInt(vm, 10);
+  return Number.isNaN(n) || n < 1 ? 1 : n;
+}
+
+function redondearMultiploSuperior(valor, multiplo) {
+  if (!multiplo || multiplo < 1) return valor > 0 ? valor : 1;
+  const v = Math.max(1, Math.round(valor));
+  return Math.ceil(v / multiplo) * multiplo;
+}
+
 // Wire add-to-cart buttons después de renderizar productos
-function agregarProductoAlCarrito(ref, nombre, precio, cantidad = 1) {
+function agregarProductoAlCarrito(ref, nombre, precio, cantidad = 1, ventaMinima = 1) {
+  const vm = normalizarVentaMinima(ventaMinima);
+  cantidad = redondearMultiploSuperior(cantidad, vm);
   if (!cantidad || cantidad < 1) return false;
 
   if (!precio || isNaN(precio)) {
@@ -656,7 +711,7 @@ function agregarProductoAlCarrito(ref, nombre, precio, cantidad = 1) {
   if (existente) {
     existente.cantidad += cantidad;
   } else {
-    carrito.push({ ref, nombre, precio, cantidad, marca: CURRENT_BRAND });
+    carrito.push({ ref, nombre, precio, cantidad, marca: CURRENT_BRAND, ventaMinima: vm });
   }
 
   guardarCarrito();
@@ -672,22 +727,26 @@ function wireAddToCart() {
     const input = stepper.querySelector('.qty-stepper-input');
     const decBtn = stepper.querySelector('[data-qty-dec]');
     const incBtn = stepper.querySelector('[data-qty-inc]');
+    const vm = normalizarVentaMinima(stepper.dataset.vm);
 
     const clamp = () => {
-      let v = parseInt(input.value, 10) || 1;
-      if (v < 1) v = 1;
+      let v = parseInt(input.value, 10) || vm;
+      if (v < vm) v = vm;
       if (v > 99) v = 99;
+      // Redondear al múltiplo de vm más cercano hacia arriba
+      v = Math.ceil(v / vm) * vm;
       input.value = v;
     };
 
     decBtn.addEventListener('click', () => {
-      let v = parseInt(input.value, 10) || 1;
-      if (v > 1) input.value = v - 1;
+      let v = parseInt(input.value, 10) || vm;
+      v = Math.max(vm, v - vm);
+      input.value = v;
     });
 
     incBtn.addEventListener('click', () => {
-      let v = parseInt(input.value, 10) || 1;
-      if (v < 99) input.value = v + 1;
+      let v = parseInt(input.value, 10) || vm;
+      if (v + vm <= 99) input.value = v + vm;
     });
 
     input.addEventListener('change', clamp);
@@ -705,8 +764,9 @@ function wireAddToCart() {
       const stepper = btn.closest('.producto-card-add')?.querySelector('.qty-stepper');
       const input   = stepper ? stepper.querySelector('.qty-stepper-input') : null;
       const cantidad = input ? parseInt(input.value, 10) : 1;
+      const vm       = normalizarVentaMinima(btn.dataset.ventaMinima);
 
-      const ok = agregarProductoAlCarrito(ref, nombre, precio, cantidad);
+      const ok = agregarProductoAlCarrito(ref, nombre, precio, cantidad, vm);
       if (!ok) {
         const orig = btn.textContent;
         btn.textContent = '⚠ Sin precio';
@@ -715,7 +775,7 @@ function wireAddToCart() {
         return;
       }
 
-      if (input) input.value = 1;
+      if (input) input.value = vm;
       const original = btn.textContent;
       btn.textContent = '✓ Agregado';
       setTimeout(() => { btn.textContent = original; }, 1200);
@@ -772,8 +832,11 @@ function setupImageModal() {
       refEl.style.display = p.ref ? 'block' : 'none';
     }
 
+    const vm = normalizarVentaMinima(p.ventaMinima);
     priceEl.textContent = precio;
-    qtyInput.value = 1;
+    qtyInput.value = vm;
+    qtyInput.min = vm;
+    qtyInput.step = vm;
 
     addBtn.disabled = !p.precio;
     addBtn.textContent = p.precio ? '+ Agregar al carrito' : 'Sin precio';
@@ -785,20 +848,31 @@ function setupImageModal() {
   const qtyInc = document.getElementById('imageModalQtyStepper')?.querySelector('[data-qty-inc]');
 
   const clampQty = () => {
-    let v = parseInt(qtyInput.value, 10) || 1;
-    if (v < 1) v = 1;
+    const vm = currentImageModalProduct
+      ? normalizarVentaMinima(currentImageModalProduct.ventaMinima)
+      : 1;
+    let v = parseInt(qtyInput.value, 10) || vm;
+    if (v < vm) v = vm;
     if (v > 99) v = 99;
+    v = Math.ceil(v / vm) * vm;
     qtyInput.value = v;
   };
 
   qtyDec?.addEventListener('click', () => {
-    let v = parseInt(qtyInput.value, 10) || 1;
-    if (v > 1) qtyInput.value = v - 1;
+    const vm = currentImageModalProduct
+      ? normalizarVentaMinima(currentImageModalProduct.ventaMinima)
+      : 1;
+    let v = parseInt(qtyInput.value, 10) || vm;
+    v = Math.max(vm, v - vm);
+    qtyInput.value = v;
   });
 
   qtyInc?.addEventListener('click', () => {
-    let v = parseInt(qtyInput.value, 10) || 1;
-    if (v < 99) qtyInput.value = v + 1;
+    const vm = currentImageModalProduct
+      ? normalizarVentaMinima(currentImageModalProduct.ventaMinima)
+      : 1;
+    let v = parseInt(qtyInput.value, 10) || vm;
+    if (v + vm <= 99) qtyInput.value = v + vm;
   });
 
   qtyInput.addEventListener('change', clampQty);
@@ -807,10 +881,11 @@ function setupImageModal() {
   addBtn.addEventListener('click', () => {
     if (!currentImageModalProduct) return;
     const p = currentImageModalProduct;
-    const cantidad = parseInt(qtyInput.value, 10) || 1;
-    const ok = agregarProductoAlCarrito(p.ref, p.nombre || p.ref, parseFloat(p.precio), cantidad);
+    const vm = normalizarVentaMinima(p.ventaMinima);
+    const cantidad = parseInt(qtyInput.value, 10) || vm;
+    const ok = agregarProductoAlCarrito(p.ref, p.nombre || p.ref, parseFloat(p.precio), cantidad, vm);
     if (ok) {
-      qtyInput.value = 1;
+      qtyInput.value = vm;
       const original = addBtn.textContent;
       addBtn.textContent = '✓ Agregado';
       setTimeout(() => { addBtn.textContent = original; }, 1200);

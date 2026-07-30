@@ -112,6 +112,36 @@ function getNodo(catId, niveles) {
   return nodo;
 }
 
+// Devuelve true si un producto NO está agotado.
+function productoDisponible(p) {
+  return p && p.cat && p.cat !== 'sin-categoria' && (!p.img || !p.img.replace(/^(infinity|kohell)\//, '').startsWith('agotados/'));
+}
+
+// Verifica si una categoría (o alguna de sus subcategorías) tiene al menos un producto disponible.
+function categoriaTieneProductosVisibles(cat) {
+  if (!cat || cat.id === 'sin-categoria') return false;
+
+  // Productos directamente asignados a la categoría
+  if (productos.some(p => productoDisponible(p) && p.cat === cat.id)) return true;
+
+  // Bajar recursivamente por subcategorías
+  if (Array.isArray(cat.subcategorias) && cat.subcategorias.length > 0) {
+    return cat.subcategorias.some(sub => subcategoriaTieneProductosVisibles(cat.id, [], sub));
+  }
+
+  return false;
+}
+
+function subcategoriaTieneProductosVisibles(catId, previos, sub) {
+  if (productosEnNivel(catId, previos, sub.id).length > 0) return true;
+
+  if (Array.isArray(sub.subcategorias) && sub.subcategorias.length > 0) {
+    return sub.subcategorias.some(ss => subcategoriaTieneProductosVisibles(catId, [...previos, sub.id], ss));
+  }
+
+  return false;
+}
+
 // ════════════════════════════════
 // RENDER TAGS FILTROS (multinivel)
 // ════════════════════════════════
@@ -120,7 +150,15 @@ function renderTags() {
   cont.innerHTML = '';
 
   // ——— Nivel 0: Categorías ———
-  const catsVisibles = categorias.filter(c => c.id !== 'sin-categoria');
+  const catsVisibles = categorias.filter(c =>
+    c.id !== 'sin-categoria' && categoriaTieneProductosVisibles(c)
+  );
+
+  // Si la categoría activa quedó sin productos disponibles, volver a "Todos"
+  if (catActiva !== 'todos' && !catsVisibles.some(c => c.id === catActiva)) {
+    catActiva = 'todos';
+    subActiva = [];
+  }
   const nivel0 = document.createElement('div');
   nivel0.className = 'filtros-tags filtros-nivel';
   nivel0.innerHTML =
@@ -287,6 +325,7 @@ function renderProductos() {
       ? (p.img.startsWith('/') ? p.img : (/^(infinity|kohell)\//.test(p.img) ? `/Imagenes/${p.img}` : `/Imagenes/kohell/${p.img}`))
       : '';
     const mostrarRef = Boolean(ref);
+    const vm = normalizarVentaMinima(p.ventaMinima);
     return `
       <article class="producto-card" style="animation-delay: ${i * 0.04}s">
         <div class="producto-img">
@@ -300,12 +339,15 @@ function renderProductos() {
           ${desc ? `<p class="producto-desc">${escapeHtml(desc)}</p>` : ''}
           ${mostrarRef ? `<div class="producto-ref">${escapeHtml(ref)}</div>` : ''}
           <div class="producto-precio">${precio}</div>
+          ${vm > 1 ? `<div class="producto-venta-minima-tag">Venta mínima: ${vm} unidades</div>` : ''}
           <div class="producto-card-add">
-            <input type="number" class="producto-card-add-qty" value="1" min="1" max="99"
-                   data-ref="${p.ref}" aria-label="Cantidad">
+            <input type="number" class="producto-card-add-qty" value="${vm}" min="${vm}" max="99" step="${vm}"
+                   data-ref="${p.ref}" data-vm="${vm}" aria-label="Cantidad">
             <button class="producto-card-add-btn" data-ref="${p.ref}"
                     data-nombre="${escapeHtml(nombre)}"
-                    data-precio="${p.precio ?? ''}">
+                    data-precio="${p.precio ?? ''}"
+                    data-venta-minima="${vm}"
+                    ${p.precio ? '' : 'disabled'}>
               + Agregar
             </button>
           </div>
@@ -619,8 +661,36 @@ async function enviarPedido() {
   }
 }
 
+function normalizarVentaMinima(vm) {
+  const n = parseInt(vm, 10);
+  return Number.isNaN(n) || n < 1 ? 1 : n;
+}
+
+function redondearMultiploSuperior(valor, multiplo) {
+  if (!multiplo || multiplo < 1) return valor > 0 ? valor : 1;
+  const v = Math.max(1, Math.round(valor));
+  return Math.ceil(v / multiplo) * multiplo;
+}
+
 // Wire add-to-cart buttons después de renderizar productos
 function wireAddToCart() {
+  document.querySelectorAll('.producto-card-add-qty').forEach(input => {
+    if (input.dataset.qtyWired) return;
+    input.dataset.qtyWired = '1';
+
+    const vm = normalizarVentaMinima(input.dataset.vm);
+    const clamp = () => {
+      let v = parseInt(input.value, 10) || vm;
+      if (v < vm) v = vm;
+      if (v > 99) v = 99;
+      v = Math.ceil(v / vm) * vm;
+      input.value = v;
+    };
+
+    input.addEventListener('change', clamp);
+    input.addEventListener('blur', clamp);
+  });
+
   document.querySelectorAll('.producto-card-add-btn').forEach(btn => {
     if (btn.dataset.cartWired) return;
     btn.dataset.cartWired = '1';
@@ -629,10 +699,12 @@ function wireAddToCart() {
       const ref     = btn.dataset.ref;
       const nombre  = btn.dataset.nombre;
       const precio  = parseFloat(btn.dataset.precio);
+      const vm      = normalizarVentaMinima(btn.dataset.ventaMinima);
       const qtyInput = document.querySelector(`.producto-card-add-qty[data-ref="${ref}"]`);
-      const cantidad = qtyInput ? parseInt(qtyInput.value, 10) : 1;
+      let cantidad = qtyInput ? parseInt(qtyInput.value, 10) : vm;
+      cantidad = redondearMultiploSuperior(cantidad, vm);
 
-      if (!cantidad || cantidad < 1) return;
+      if (!cantidad || cantidad < vm) return;
 
       // Mostrar feedback si el producto no tiene precio
       if (!precio || isNaN(precio)) {
@@ -647,10 +719,10 @@ function wireAddToCart() {
       if (existente) {
         existente.cantidad += cantidad;
       } else {
-        carrito.push({ ref, nombre, precio, cantidad, marca: CURRENT_BRAND });
+        carrito.push({ ref, nombre, precio, cantidad, marca: CURRENT_BRAND, ventaMinima: vm });
       }
 
-      if (qtyInput) qtyInput.value = 1;
+      if (qtyInput) qtyInput.value = vm;
       guardarCarrito();
       actualizarBadge();
 

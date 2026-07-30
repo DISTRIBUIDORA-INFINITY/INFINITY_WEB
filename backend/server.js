@@ -1015,7 +1015,8 @@ app.post('/api/:brand/productos/upload', requireProductosManagement, upload.arra
           ref:  ref,
           cat:  categoria,
           sub:  subPath,
-          img:  `${relDir}/${outName}`
+          img:  `${relDir}/${outName}`,
+          ventaMinima: 1
         });
         creados.push({ ref });
       } catch (err) {
@@ -1040,6 +1041,30 @@ app.post('/api/:brand/productos/upload', requireProductosManagement, upload.arra
   } catch (err) {
     console.error('Upload productos error:', err);
     res.status(500).json({ error: 'Error al procesar la subida' });
+  }
+});
+
+app.patch('/api/:brand/productos/:ref/venta-minima', requireProductosManagement, async (req, res) => {
+  const brand = brandFromReq(req, res); if (!brand) return;
+  const ref = req.params.ref;
+  const { ventaMinima } = req.body || {};
+
+  const vm = parseInt(ventaMinima, 10);
+  if (Number.isNaN(vm) || vm < 1) {
+    return res.status(400).json({ error: 'La venta mínima debe ser un número entero mayor o igual a 1' });
+  }
+
+  try {
+    const productos = await getProductos(brand);
+    const idx = productos.findIndex(p => p.ref === ref);
+    if (idx === -1) return res.status(404).json({ error: 'Producto no encontrado' });
+
+    productos[idx].ventaMinima = vm;
+    await saveProductos(brand, productos);
+    res.json({ ok: true, ref, ventaMinima: vm });
+  } catch (err) {
+    console.error('Venta mínima error:', err);
+    res.status(500).json({ error: 'Error al guardar la venta mínima' });
   }
 });
 
@@ -1224,6 +1249,14 @@ app.post('/api/:brand/productos/excel', requireProductosManagement, excelUpload.
       }
       if (changed) { actualizados.push({ ref: refRaw, fila: i + 1 }); filasConDatos++; }
     }
+
+    // Asegurar que todos los productos tengan ventaMinima (default 1)
+    productos.forEach(p => {
+      if (p.ventaMinima === undefined || p.ventaMinima === null || p.ventaMinima === '') {
+        p.ventaMinima = 1;
+      }
+    });
+
     await saveProductos(brand, productos);
     res.json({
       ok: true,
