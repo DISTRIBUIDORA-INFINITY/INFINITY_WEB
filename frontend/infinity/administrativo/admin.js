@@ -1372,8 +1372,9 @@ async function confirmarEliminarSubcategoria() {
 const MAX_FILES_UPLOAD  = 50;
 const MAX_SIZE_UPLOAD   = 20 * 1024 * 1024; // 20MB
 const ACCEPTED_TYPES     = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif'];
-// Referencia = nombre completo antes de la extensión, sin importar complejidad.
-const REF_VALID_CLIENTE = /^[a-zA-Z0-9]+(?:[-_a-zA-Z0-9]*[a-zA-Z0-9])?$/;
+// Referencia = nombre completo antes de la extensión.
+// Permite casi cualquier carácter excepto los peligrosos para el sistema de archivos o URLs.
+const REF_VALID_CLIENTE = /^[^\\/:*?"<>|\s]+$/;
 const SIN_CAT_ID         = 'sin-categoria';
 
 let pendingFiles = []; // [{file, ref, num, isValid, motivo}]

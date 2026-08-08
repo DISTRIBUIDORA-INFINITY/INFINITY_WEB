@@ -911,7 +911,8 @@ const MAX_FILES  = 50;
 const MAX_SIZE   = 20 * 1024 * 1024;
 const MAX_WIDTH  = 1200;
 const WEBP_QUALITY = 80;
-const REF_VALID_RE = /^[a-zA-Z0-9]+(?:[-_a-zA-Z0-9]*[a-zA-Z0-9])?$/;
+// Permite casi cualquier carácter excepto los peligrosos para el sistema de archivos o URLs.
+const REF_VALID_RE = /^[^\\/:*?"<>|\s]+$/;
 
 const upload = multer({
   storage: multer.memoryStorage(),
