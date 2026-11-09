@@ -13,6 +13,21 @@ let clienteActual = null; // cliente identificado con su documento (precios al p
 // Identifica la marca del catálogo actual (usado para taggear items del carrito)
 const CURRENT_BRAND = 'kohell';
 
+function pintarHeroMedia() {
+  const slots = [document.getElementById('heroImg1'), document.getElementById('heroImg2')];
+  if (!slots[0]) return;
+  const conImg = productos.filter(p => p && p.img).slice(0, 2);
+  slots.forEach((img, idx) => {
+    const p = conImg[idx];
+    if (!img || !p) return;
+    const ruta = p.img.startsWith('/')
+      ? p.img
+      : (/^(infinity|kohell)\//.test(p.img) ? `/Imagenes/${p.img}` : `/Imagenes/kohell/${p.img}`);
+    img.src = ruta;
+    img.alt = p.nombre || p.ref || '';
+  });
+}
+
 function escapeHtml(str) {
   return String(str ?? '')
     .replace(/&/g, '&amp;')
@@ -62,6 +77,7 @@ async function cargarDatos() {
     cargando = false;
     renderTags();
     renderProductos();
+    pintarHeroMedia();
   } catch (err) {
     console.error('Error cargando datos:', err);
     cargando = false;
@@ -328,7 +344,7 @@ function renderProductos() {
     const mostrarRef = Boolean(ref);
     const vm = normalizarVentaMinima(p.ventaMinima);
     return `
-      <article class="producto-card" style="animation-delay: ${i * 0.04}s">
+      <article class="producto-card" data-reveal style="--reveal-i:${i % 8}">
         <div class="producto-img">
           <span class="producto-cat">${cat ? cat.nombre : p.cat}</span>
           <img src="${escapeHtml(imgSrc)}" alt="${escapeHtml(nombre)}" loading="lazy"
@@ -803,6 +819,8 @@ async function recargarProductos() {
     productos = await res.json();
     reajustarCarritoPrecios();
     renderProductos();
+    pintarHeroMedia();
+    if (window.activarReveals) window.activarReveals();
   } catch (err) {
     console.error('Error recargando productos:', err);
   }

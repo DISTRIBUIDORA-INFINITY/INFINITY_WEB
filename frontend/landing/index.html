@@ -8,8 +8,8 @@
   <meta name="description" content="Catálogos web de Infinity y Kohell. Elige la marca que quieres ver.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="estilos.css?v=1">
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=Jost:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="estilos.css?v=5">
 </head>
 <body>
 
@@ -38,7 +38,7 @@
 
   <!-- HERO -->
   <section class="hero" id="inicio">
-    <div class="hero-content">
+    <div class="hero-content" data-reveal>
       <span class="hero-badge">✨ Bienvenido a nuestro catálogo</span>
       <h1 class="hero-title">
         Elige tu <em>estilo</em><br>
@@ -52,13 +52,13 @@
 
   <!-- TARJETAS DE MARCAS -->
   <section class="brands-section" id="marcas">
-    <div class="section-header">
+    <div class="section-header" data-reveal>
       <h2 class="section-title">Nuestras <em>marcas</em></h2>
       <p class="section-subtitle">Selecciona la marca que quieres explorar</p>
     </div>
 
     <div class="brands-grid">
-      <a href="/infinity/" class="brand-card brand-infinity">
+      <a href="/infinity/" class="brand-card brand-infinity" data-reveal style="--reveal-i:0">
         <div class="brand-card-inner">
           <div class="brand-logo-wrap">
             <img src="/infinity/assets/logo.jpeg" alt="Infinity Distribuidora" class="brand-logo">
@@ -70,7 +70,7 @@
         </div>
       </a>
 
-      <a href="/kohell/" class="brand-card brand-kohell">
+      <a href="/kohell/" class="brand-card brand-kohell" data-reveal style="--reveal-i:1">
         <div class="brand-card-inner">
           <div class="brand-logo-wrap">
             <img src="/kohell/assets/logo.jpeg" alt="Kohell" class="brand-logo">
@@ -106,6 +106,7 @@
     </div>
   </footer>
 
-  <script src="app.js?v=1"></script>
+  <script src="animaciones.js?v=1"></script>
+  <script src="app.js?v=2"></script>
 </body>
 </html>
