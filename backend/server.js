@@ -15,6 +15,7 @@ const sharp       = require('sharp');
 const XLSX        = require('xlsx');
 const PDFDocument = require('pdfkit');
 const archiver    = require('archiver');
+const zlib        = require('zlib');
 
 const app    = express();
 const PORT   = process.env.PORT || 3000;
@@ -120,6 +121,146 @@ async function initDataFiles() {
 // ════════════════════════════════
 app.use(express.json());
 app.use(cookieParser(SECRET));
+
+// ════════════════════════════════
+// COMPRESIÓN (gzip sin dependencias)
+// ════════════════════════════════
+app.use((req, res, next) => {
+  const ae = String(req.headers['accept-encoding'] || '');
+  if (!/gzip/.test(ae)) return next();
+
+  const originalSend = res.send.bind(res);
+  res.send = function (body) {
+    try {
+      const tipo = String(res.getHeader('Content-Type') || '');
+      if (/json|html|css|javascript|text\//.test(tipo) && body !== undefined && body !== null) {
+        const buf = Buffer.isBuffer(body) ? body : Buffer.from(String(body));
+        if (buf.length > 1024) {
+          const gz = zlib.gzipSync(buf, { level: 6 });
+          res.setHeader('Content-Encoding', 'gzip');
+          res.setHeader('Vary', 'Accept-Encoding');
+          res.setHeader('Content-Length', gz.length);
+          return res.end(gz);
+        }
+      }
+    } catch (e) { /* si falla, seguimos sin comprimir */ }
+    return originalSend(body);
+  };
+  next();
+});
+
+// ════════════════════════════════
+// IMÁGENES — helpers y miniaturas
+// ════════════════════════════════
+function escaparAtributoHtml(v) {
+  return String(v == null ? '' : v)
+    .replace(/&/g, '&amp;')
+    .replace(/"/g, '&quot;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}
+
+function rutaRelativaImagen(img) {
+  return String(img || '').replace(/^\/+/, '').replace(/^(infinity|kohell)\//, '');
+}
+
+function imagenUrl(brand, img) {
+  if (!img) return '';
+  const s = String(img);
+  if (s.startsWith('/')) return s;
+  const clean = s.replace(/^\/+/, '');
+  if (/^(infinity|kohell)\//.test(clean)) return `/Imagenes/${clean}`;
+  return `/Imagenes/${brand}/${clean}`;
+}
+
+// Miniaturas WebP generadas al vuelo y cacheadas en /Imagenes/.thumbs
+app.get('/min/:brand/*', async (req, res) => {
+  try {
+    const brand = safeBrand(req.params.brand);
+    const rel = String(req.params[0] || '').replace(/\\/g, '/');
+    if (!rel || rel.includes('..')) return res.status(400).end();
+
+    const base = imgDir(brand);
+    const src = path.join(base, rel);
+    if (!src.startsWith(base + path.sep)) return res.status(400).end();
+
+    const w = Math.min(Math.max(parseInt(req.query.w, 10) || 600, 80), 1600);
+    const thumbsRoot = path.join(IMG_DIR, '.thumbs', brand);
+    const safeName = rel.replace(/[\\/]/g, '__');
+
+    let stamp = '0';
+    try { stamp = String(Math.floor((await fs.stat(src)).mtimeMs)); } catch { }
+
+    const out = path.join(thumbsRoot, `${w}__${stamp}__${safeName}`);
+    try { await fs.access(out); }
+    catch {
+      await fs.mkdir(path.dirname(out), { recursive: true });
+      const tmp = `${out}.tmp-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+      await sharp(src).resize({ width: w, withoutEnlargement: true }).webp({ quality: 80 }).toFile(tmp);
+      try { await fs.rename(tmp, out); }
+      catch { try { await fs.unlink(tmp); } catch { } }
+    }
+
+    res.set('Cache-Control', 'public, max-age=604800');
+    res.type('image/webp');
+    res.sendFile(out);
+  } catch (err) {
+    res.status(404).end();
+  }
+});
+
+// ════════════════════════════════
+// CATÁLOGOS — fotos del hero elegidas en el servidor
+// ════════════════════════════════
+async function servirCatalogo(req, res, brand) {
+  try {
+    const file = path.join(FRONTEND_DIR, brand, 'index.html');
+    let html = await fs.readFile(file, 'utf8');
+
+    let picks = [];
+    try {
+      const productos = await getProductos(brand);
+      const candidatos = (productos || []).filter(p => {
+        if (!p || !p.img) return false;
+        if (/agotados\//.test(String(p.img))) return false;
+        const rel = rutaRelativaImagen(p.img);
+        return rel && fsSync.existsSync(path.join(imgDir(brand), rel));
+      });
+
+      for (let i = candidatos.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [candidatos[i], candidatos[j]] = [candidatos[j], candidatos[i]];
+      }
+      picks = candidatos.slice(0, 2);
+    } catch (e) { /* sin fotos disponibles */ }
+
+    const urls = picks.map(p => `/min/${brand}/${rutaRelativaImagen(p.img)}?w=900`);
+
+    if (urls.length) {
+      const preloads = urls
+        .map(u => `<link rel="preload" as="image" href="${escaparAtributoHtml(u)}" fetchpriority="high">`)
+        .join('\n  ');
+      html = html.replace('</head>', `  ${preloads}\n</head>`);
+    }
+
+    for (let i = 0; i < 2; i++) {
+      const p = picks[i];
+      if (!p) continue;
+      const viejo = `<img id="heroImg${i + 1}" alt="" loading="lazy">`;
+      const nuevo = `<img id="heroImg${i + 1}" src="${escaparAtributoHtml(urls[i])}" alt="${escaparAtributoHtml(p.nombre || p.ref || '')}" fetchpriority="high" decoding="async">`;
+      html = html.replace(viejo, nuevo);
+    }
+
+    res.set('Cache-Control', 'no-cache');
+    res.type('html').send(html);
+  } catch (err) {
+    console.error('[catalogo] error:', err.message);
+    res.sendFile(path.join(FRONTEND_DIR, brand, 'index.html'));
+  }
+}
+
+app.get(['/infinity', '/infinity/'], (req, res) => servirCatalogo(req, res, 'infinity'));
+app.get(['/kohell', '/kohell/'], (req, res) => servirCatalogo(req, res, 'kohell'));
 
 // ════════════════════════════════
 // SERVIR FRONTENDS ESTÁTICOS

@@ -13,9 +13,22 @@ let clienteActual = null; // cliente identificado con su documento (precios al p
 // Identifica la marca del catálogo actual (usado para taggear items del carrito)
 const CURRENT_BRAND = 'kohell';
 
+function thumbUrl(img, w) {
+  if (!img) return '';
+  const s = String(img);
+  if (s.startsWith('/')) return s;
+  const clean = s.replace(/^\/+/, '');
+  const conMarca = /^(infinity|kohell)\//.test(clean) ? clean : `${CURRENT_BRAND}/${clean}`;
+  return `/min/${conMarca}?w=${w}`;
+}
+
 function pintarHeroMedia() {
   const slots = [document.getElementById('heroImg1'), document.getElementById('heroImg2')];
   if (!slots[0]) return;
+
+  // Si el servidor ya eligió las fotos, no las pisamos
+  if (slots[0].getAttribute('src')) return;
+
   // Dos fotos al azar del catálogo en cada visita (Fisher-Yates)
   const candidatos = productos.filter(p => p && p.img);
   for (let i = candidatos.length - 1; i > 0; i--) {
@@ -23,13 +36,11 @@ function pintarHeroMedia() {
     [candidatos[i], candidatos[j]] = [candidatos[j], candidatos[i]];
   }
   const conImg = candidatos.slice(0, 2);
+
   slots.forEach((img, idx) => {
     const p = conImg[idx];
     if (!img || !p) return;
-    const ruta = p.img.startsWith('/')
-      ? p.img
-      : (/^(infinity|kohell)\//.test(p.img) ? `/Imagenes/${p.img}` : `/Imagenes/kohell/${p.img}`);
-    img.src = ruta;
+    img.src = thumbUrl(p.img, 900);
     img.alt = p.nombre || p.ref || '';
   });
 }
@@ -368,9 +379,7 @@ function renderProductos() {
     const conMayor = tienePrecioMayor(p);
     const precio = fmtPrecio(p.precio);
     const precioCarrito = conMayor ? Number(p.precioMayor) : p.precio;
-    const imgSrc = p.img
-      ? (p.img.startsWith('/') ? p.img : (/^(infinity|kohell)\//.test(p.img) ? `/Imagenes/${p.img}` : `/Imagenes/kohell/${p.img}`))
-      : '';
+    const imgSrc = thumbUrl(p.img, 600);
     const mostrarRef = Boolean(ref);
     const vm = normalizarVentaMinima(p.ventaMinima);
     return `
