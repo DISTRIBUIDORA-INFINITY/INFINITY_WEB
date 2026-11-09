@@ -279,6 +279,30 @@ function onTagClick(nivel, id) {
   }
   renderTags();
   renderProductos();
+  requestAnimationFrame(irAlCatalogo);
+}
+
+
+// Vuelve al inicio del catálogo al cambiar de categoría
+function irAlCatalogo() {
+  const grid = document.getElementById('productos');
+  if (!grid) return;
+  const nav     = document.querySelector('.navbar');
+  const filtros = document.getElementById('filtrosTags');
+  const navH     = nav ? nav.getBoundingClientRect().height : 70;
+  const filtrosH = filtros ? Math.min(filtros.getBoundingClientRect().height, 150) : 0;
+  const y = grid.getBoundingClientRect().top + window.scrollY - navH - filtrosH - 18;
+  window.scrollTo({ top: Math.max(0, y), behavior: 'smooth' });
+}
+
+// Botón "Subir"
+function setupToTop() {
+  const btn = document.getElementById('toTop');
+  if (!btn) return;
+  const update = () => btn.classList.toggle('is-visible', (window.scrollY || 0) > 600);
+  window.addEventListener('scroll', update, { passive: true });
+  update();
+  btn.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
 }
 
 function sincronizarTag(cat) {
@@ -938,6 +962,7 @@ function setupClienteModal() {
 document.addEventListener('DOMContentLoaded', async () => {
   setupSearch();
   setupNav();
+  setupToTop();
   setupCartModals();
   setupClienteModal();
   await cargarClienteSesion();

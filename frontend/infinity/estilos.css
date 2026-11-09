@@ -2427,3 +2427,63 @@ html.is-scrolled .navbar { border-bottom-color: var(--line); background: rgba(25
 @media (scripting: none) {
   [data-reveal] { opacity: 1 !important; transform: none !important; }
 }
+
+/* ── Categorías siempre visibles ── */
+#filtrosTags {
+  position: sticky;
+  top: 70px;
+  z-index: 55;
+  background: var(--bg);
+  padding: 10px 0 12px;
+  margin-bottom: 12px;
+  border-bottom: 1px solid var(--line);
+}
+#filtrosTags .filtros-nivel { margin-bottom: 10px; }
+#filtrosTags .filtros-nivel:last-child { margin-bottom: 0; }
+#catalogo { scroll-margin-top: 170px; }
+
+/* ── Botón Subir ── */
+.to-top {
+  position: fixed;
+  right: 26px;
+  bottom: 100px;
+  z-index: 75;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border: 1px solid var(--line-strong);
+  border-radius: 999px;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  font-size: 0.62rem;
+  font-weight: 500;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  cursor: pointer;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(8px);
+  box-shadow: 0 10px 30px rgba(28, 25, 23, 0.10);
+  transition: opacity 0.35s var(--ease), transform 0.35s var(--ease),
+              visibility 0.35s, background 0.35s var(--ease), color 0.35s var(--ease),
+              border-color 0.35s var(--ease);
+}
+.to-top.is-visible { opacity: 1; visibility: visible; transform: none; }
+.to-top:hover { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.to-top svg { display: block; }
+
+@media (max-width: 768px) {
+  #filtrosTags {
+    top: 64px;
+    max-height: 38vh;
+    overflow-y: auto;
+    padding: 8px 0 10px;
+  }
+  #filtrosTags .filtros-nivel { flex-wrap: nowrap; justify-content: flex-start; overflow-x: auto; gap: 18px; padding-bottom: 4px; }
+  .to-top { right: 16px; bottom: 92px; padding: 9px 13px; }
+}
+
+/* Permite que el navbar y los filtros se fijen bien al hacer scroll */
+body { overflow-x: clip; }
