@@ -16,7 +16,13 @@ const CURRENT_BRAND = 'infinity';
 function pintarHeroMedia() {
   const slots = [document.getElementById('heroImg1'), document.getElementById('heroImg2')];
   if (!slots[0]) return;
-  const conImg = productos.filter(p => p && p.img).slice(0, 2);
+  // Dos fotos al azar del catálogo en cada visita (Fisher-Yates)
+  const candidatos = productos.filter(p => p && p.img);
+  for (let i = candidatos.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [candidatos[i], candidatos[j]] = [candidatos[j], candidatos[i]];
+  }
+  const conImg = candidatos.slice(0, 2);
   slots.forEach((img, idx) => {
     const p = conImg[idx];
     if (!img || !p) return;
