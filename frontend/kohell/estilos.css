@@ -1417,3 +1417,83 @@ section {
   .brand-switch-nav-text { display: none; }
   .brand-switch-nav { padding: 8px; }
 }
+
+/* ════════════════════════════════
+   CLIENTES — PRECIOS AL POR MAYOR
+════════════════════════════════ */
+.cliente-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  padding: 10px 16px;
+  background: var(--grad-soft);
+  border-bottom: 1px solid var(--line);
+  font-size: 0.88rem;
+  color: var(--ink-soft);
+  text-align: center;
+}
+.cliente-bar strong { color: var(--violet-deep); font-weight: 800; }
+.cliente-bar-salir {
+  border: 1px solid var(--line-strong);
+  background: var(--white);
+  color: var(--ink-soft);
+  font-size: 0.78rem;
+  font-weight: 700;
+  padding: 4px 12px;
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+  transition: var(--transition);
+}
+.cliente-bar-salir:hover { background: var(--bg-soft); color: var(--ink); }
+
+.producto-precio.producto-precio-detalle {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--ink-soft);
+  background: none;
+  -webkit-text-fill-color: currentColor;
+  margin-top: 6px;
+}
+.producto-precio-mayor {
+  margin-top: 2px;
+  font-size: 1.3rem;
+  font-weight: 800;
+  background: var(--grad-text);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  letter-spacing: -0.02em;
+}
+.producto-precio-mayor small {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  -webkit-text-fill-color: currentColor;
+  color: var(--ink-mute);
+  display: block;
+  line-height: 1;
+  margin-bottom: 2px;
+}
+
+.client-modal-content { max-width: 430px; width: calc(100% - 32px); }
+.client-modal-intro {
+  font-size: 0.9rem;
+  color: var(--ink-soft);
+  margin-bottom: 16px;
+  line-height: 1.5;
+}
+.client-result {
+  margin-top: 12px;
+  padding: 12px 14px;
+  border-radius: var(--radius-sm);
+  background: var(--grad-soft);
+  border: 1px solid var(--line);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.client-result strong { font-size: 1rem; color: var(--ink); }
+.client-result span  { font-size: 0.82rem; color: var(--ink-mute); }

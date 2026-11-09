@@ -99,7 +99,8 @@ async function initDataFiles() {
       'sesiones.json':    [],
       'vendedores.json':  [],
       'redes.json':       [],
-      'pedidos-meta.json': []
+      'pedidos-meta.json': [],
+      'clientes.json':    []
     };
     for (const [file, value] of Object.entries(sharedFiles)) {
       const fp = path.join(DATA_DIR, file);
@@ -218,6 +219,43 @@ async function getUserData(usuario) {
   } catch {
     return null;
   }
+}
+
+// ════════════════════════════════
+// HELPERS — Clientes (registro compartido entre marcas)
+// ════════════════════════════════
+const CLIENTE_COOKIE         = 'cliente';
+const CLIENTE_COOKIE_MAX_AGE = 7 * 24 * 60 * 60 * 1000; // 7 días
+
+async function getClientes() {
+  try {
+    const data = await readSharedJson('clientes.json');
+    return Array.isArray(data) ? data : [];
+  } catch {
+    return [];
+  }
+}
+
+function normDocumento(doc) {
+  return String(doc == null ? '' : doc).trim();
+}
+
+// Devuelve el cliente identificado en la cookie (si sigue existiendo)
+async function getClienteSesion(req) {
+  const id = req.signedCookies && req.signedCookies[CLIENTE_COOKIE];
+  if (!id) return null;
+  const clientes = await getClientes();
+  return clientes.find(c => c.id === id) || null;
+}
+
+function setClienteCookie(res, cliente) {
+  res.cookie(CLIENTE_COOKIE, cliente.id, {
+    signed:   true,
+    httpOnly: true,
+    sameSite: 'lax',
+    secure:   false,
+    maxAge:   CLIENTE_COOKIE_MAX_AGE
+  });
 }
 
 // ════════════════════════════════
@@ -440,6 +478,20 @@ async function requireDescargasAccess(req, res, next) {
   next();
 }
 
+async function requireClientesManagement(req, res, next) {
+  const session = await getSessionUser(req);
+  if (!session) return res.status(401).json({ error: 'No autorizado' });
+  const user = await getUserData(session.usuario);
+  if (!user) return res.status(401).json({ error: 'No autorizado' });
+  const esAdmin = user.rol === 'admin';
+  const tienePermiso = (user.permisos || []).includes('clientes');
+  if (!esAdmin && !tienePermiso) {
+    return res.status(403).json({ error: 'No tienes permiso para gestionar clientes' });
+  }
+  req.user = user;
+  next();
+}
+
 // Helper: extrae la marca de la URL y la valida. Si no es válida, devuelve 404.
 function brandFromReq(req, res) {
   const brand = getBrand(req);
@@ -541,7 +593,19 @@ app.get('/api/:brand/productos', async (req, res) => {
   try {
     const brand = brandFromReq(req, res); if (!brand) return;
     const data = await readBrandJson(brand, 'productos.json');
-    res.json(data);
+
+    // El precio al por mayor solo se expone a:
+    //   - clientes identificados con documento (cookie firmada), o
+    //   - usuarios del panel administrativo (sesión iniciada)
+    const cliente = await getClienteSesion(req);
+    const sesionPanel = await getSessionUser(req);
+    if (cliente || sesionPanel) return res.json(data);
+
+    res.json(data.map(p => {
+      if (!p || typeof p !== 'object') return p;
+      const { precioMayor, ...resto } = p;
+      return resto;
+    }));
   } catch {
     res.json([]);
   }
@@ -1069,6 +1133,50 @@ app.patch('/api/:brand/productos/:ref/venta-minima', requireProductosManagement,
   }
 });
 
+// Edición manual de precios (detal y al por mayor)
+app.patch('/api/:brand/productos/:ref/precios', requireProductosManagement, async (req, res) => {
+  const brand = brandFromReq(req, res); if (!brand) return;
+  const ref = req.params.ref;
+  const { precio, precioMayor } = req.body || {};
+
+  const parseNum = (v) => {
+    if (v === null || v === undefined || v === '') return null;
+    if (typeof v === 'number') return Number.isFinite(v) ? v : null;
+    return parsePrice(v);
+  };
+
+  const p   = parseNum(precio);
+  const pM  = parseNum(precioMayor);
+
+  if (p === null || p < 0) {
+    return res.status(400).json({ error: 'El precio debe ser un número mayor o igual a 0' });
+  }
+  if (pM === null || pM < 0) {
+    return res.status(400).json({ error: 'El precio al mayor debe ser un número mayor o igual a 0' });
+  }
+
+  try {
+    const productos = await getProductos(brand);
+    const idx = productos.findIndex(x => x.ref === ref);
+    if (idx === -1) return res.status(404).json({ error: 'Producto no encontrado' });
+
+    productos[idx].precio = p;
+    // 0 = no se vende al mayor → mismo precio que al detal
+    productos[idx].precioMayor = pM === 0 ? p : pM;
+
+    await saveProductos(brand, productos);
+    res.json({
+      ok: true,
+      ref,
+      precio: productos[idx].precio,
+      precioMayor: productos[idx].precioMayor
+    });
+  } catch (err) {
+    console.error('Precios error:', err);
+    res.status(500).json({ error: 'Error al guardar los precios' });
+  }
+});
+
 app.post('/api/:brand/productos/:ref/agotar', requireProductosManagement, async (req, res) => {
   const brand = brandFromReq(req, res); if (!brand) return;
   const ref = req.params.ref;
@@ -1142,7 +1250,8 @@ app.delete('/api/:brand/productos/:ref', requireProductosManagement, async (req,
 // ════════════════════════════════
 function normHeader(s) {
   return String(s || '').trim().toLowerCase()
-    .normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/\s+/g, ' ');
 }
 
 function parsePrice(value) {
@@ -1203,11 +1312,12 @@ app.post('/api/:brand/productos/excel', requireProductosManagement, excelUpload.
     if (rows.length === 0) return res.status(400).json({ error: 'El archivo está vacío' });
 
     const headersRaw = rows[0].map(h => normHeader(h));
-    const expected = ['referencia', 'descripcion', 'precio'];
-    if (headersRaw.length < 3 ||
+    const expected = ['referencia', 'descripcion', 'precio', 'precio al mayor'];
+    if (headersRaw.length < 4 ||
         headersRaw[0] !== expected[0] ||
         headersRaw[1] !== expected[1] ||
-        headersRaw[2] !== expected[2]) {
+        headersRaw[2] !== expected[2] ||
+        headersRaw[3] !== expected[3]) {
       return res.status(400).json({
         error: `Los encabezados deben ser exactamente: ${expected.join(' | ').toUpperCase()}. Encontrado: ${rows[0].map(h => String(h).trim() || '(vacío)').join(' | ').toUpperCase()}`
       });
@@ -1227,9 +1337,10 @@ app.post('/api/:brand/productos/excel', requireProductosManagement, excelUpload.
       const isEmpty = row.every(c => c === '' || c === null || c === undefined);
       if (isEmpty) { filasVacias.push(i + 1); continue; }
 
-      const refRaw    = row[0] != null ? String(row[0]).trim() : '';
-      const descRaw   = row[1] != null ? String(row[1]).trim() : '';
-      const precioRaw = row[2];
+      const refRaw        = row[0] != null ? String(row[0]).trim() : '';
+      const descRaw       = row[1] != null ? String(row[1]).trim() : '';
+      const precioRaw     = row[2];
+      const precioMayorRaw = row[3];
 
       if (!refRaw) { errores.push({ fila: i + 1, motivo: 'REFERENCIA vacía' }); continue; }
       const producto = productosByRef.get(refRaw);
@@ -1248,6 +1359,22 @@ app.post('/api/:brand/productos/excel', requireProductosManagement, excelUpload.
         producto.precio = precio;
         changed = true;
       }
+
+      // Precio al por mayor: obligatorio. 0 = no se vende al mayor → mismo precio que al detal.
+      if (precioMayorRaw === '' || precioMayorRaw === null || precioMayorRaw === undefined) {
+        errores.push({ fila: i + 1, ref: refRaw, motivo: 'PRECIO AL MAYOR vacío' });
+        continue;
+      }
+      let precioMayor;
+      if (typeof precioMayorRaw === 'number') precioMayor = precioMayorRaw;
+      else precioMayor = parsePrice(precioMayorRaw);
+      if (precioMayor === null || isNaN(precioMayor)) {
+        errores.push({ fila: i + 1, ref: refRaw, motivo: `Precio al mayor inválido: "${precioMayorRaw}"` });
+        continue;
+      }
+      producto.precioMayor = precioMayor === 0 ? (Number(producto.precio) || 0) : precioMayor;
+      changed = true;
+
       if (changed) { actualizados.push({ ref: refRaw, fila: i + 1 }); filasConDatos++; }
     }
 
@@ -1354,10 +1481,11 @@ app.post('/api/admin/cleanup-sessions', requireAdmin, async (req, res) => {
 // PDF CATÁLOGO POR MARCA
 // ════════════════════════════════
 async function generarPDFCatalogo(req, res, brand) {
-  const { seleccion } = req.body || {};
+  const { seleccion, modoPrecios } = req.body || {};
   if (!Array.isArray(seleccion) || seleccion.length === 0) {
     return res.status(400).json({ error: 'Debes seleccionar al menos una categoría o subcategoría' });
   }
+  const MODO_PRECIOS = ['detal', 'mayor', 'ambos'].includes(modoPrecios) ? modoPrecios : 'detal';
   try {
     const categorias = await getCategorias(brand);
     const productos  = await getProductos(brand);
@@ -1549,10 +1677,25 @@ async function generarPDFCatalogo(req, res, brand) {
         doc.fontSize(11).fillColor(INK).font('Helvetica-Bold')
            .text(prod.nombre || prod.ref || 'Sin nombre', x, textY, { width: CARD_W, height: 50 });
         textY += 52;
-        const precio = (prod.precio !== undefined && prod.precio !== null && prod.precio !== '')
-          ? `$${Number(prod.precio).toLocaleString('es-CO')}` : '—';
-        doc.fontSize(15).fillColor(PRIMARY).font('Helvetica-Bold')
-           .text(precio, x, textY, { width: CARD_W });
+        const fmtPrecio = (v) => (v !== undefined && v !== null && v !== '')
+          ? `$${Number(v).toLocaleString('es-CO')}` : '—';
+        const precioDetal  = fmtPrecio(prod.precio);
+        const precioMayor  = (prod.precioMayor !== undefined && prod.precioMayor !== null && prod.precioMayor !== '')
+          ? fmtPrecio(prod.precioMayor)
+          : precioDetal;
+
+        if (MODO_PRECIOS === 'ambos') {
+          doc.fontSize(11).fillColor(INK).font('Helvetica')
+             .text(`Detal: ${precioDetal}`, x, textY, { width: CARD_W });
+          doc.fontSize(13).fillColor(PRIMARY).font('Helvetica-Bold')
+             .text(`Mayor: ${precioMayor}`, x, textY + 15, { width: CARD_W });
+        } else if (MODO_PRECIOS === 'mayor') {
+          doc.fontSize(15).fillColor(PRIMARY).font('Helvetica-Bold')
+             .text(precioMayor, x, textY, { width: CARD_W });
+        } else {
+          doc.fontSize(15).fillColor(PRIMARY).font('Helvetica-Bold')
+             .text(precioDetal, x, textY, { width: CARD_W });
+        }
         col++;
         if (col >= 2) { col = 0; y += CARD_H + 20; }
       }
@@ -1673,6 +1816,119 @@ app.delete('/api/vendedores/:id', requirePedidosManagement, async (req, res) => 
   vendedores = vendedores.filter(v => v.id !== req.params.id);
   await writeSharedJson('vendedores.json', vendedores);
   res.json(vendedores);
+});
+
+// ════════════════════════════════
+// CLIENTES — registro compartido entre marcas
+// data/clientes.json: [{ id, nombre, documento, creadoEn }]
+// Los clientes solo se crean desde el panel. El público se identifica
+// con su documento y recibe una cookie firmada por 7 días.
+// ════════════════════════════════
+app.get('/api/clientes', requireClientesManagement, async (req, res) => {
+  try {
+    const clientes = await getClientes();
+    clientes.sort((a, b) => String(a.nombre || '').localeCompare(String(b.nombre || '')));
+    res.json(clientes);
+  } catch (err) {
+    console.error('Get clientes error:', err);
+    res.status(500).json({ error: 'Error al cargar los clientes' });
+  }
+});
+
+app.post('/api/clientes', requireClientesManagement, async (req, res) => {
+  const { nombre, documento } = req.body || {};
+  const nom = String(nombre || '').trim();
+  const doc = normDocumento(documento);
+  if (!nom) return res.status(400).json({ error: 'El nombre es obligatorio' });
+  if (!doc) return res.status(400).json({ error: 'El documento es obligatorio' });
+
+  try {
+    const clientes = await getClientes();
+    if (clientes.some(c => normDocumento(c.documento) === doc)) {
+      return res.status(409).json({ error: 'Ya existe un cliente con ese documento' });
+    }
+    const nuevo = { id: crypto.randomUUID(), nombre: nom, documento: doc, creadoEn: Date.now() };
+    clientes.push(nuevo);
+    await writeSharedJson('clientes.json', clientes);
+    res.json({ ok: true, cliente: nuevo });
+  } catch (err) {
+    console.error('Create cliente error:', err);
+    res.status(500).json({ error: 'Error al guardar el cliente' });
+  }
+});
+
+app.put('/api/clientes/:id', requireClientesManagement, async (req, res) => {
+  const { id } = req.params;
+  const { nombre, documento } = req.body || {};
+  const nom = String(nombre || '').trim();
+  const doc = normDocumento(documento);
+  if (!nom) return res.status(400).json({ error: 'El nombre es obligatorio' });
+  if (!doc) return res.status(400).json({ error: 'El documento es obligatorio' });
+
+  try {
+    const clientes = await getClientes();
+    const idx = clientes.findIndex(c => c.id === id);
+    if (idx === -1) return res.status(404).json({ error: 'Cliente no encontrado' });
+    if (clientes.some(c => c.id !== id && normDocumento(c.documento) === doc)) {
+      return res.status(409).json({ error: 'Ya existe un cliente con ese documento' });
+    }
+    clientes[idx].nombre = nom;
+    clientes[idx].documento = doc;
+    await writeSharedJson('clientes.json', clientes);
+    res.json({ ok: true, cliente: clientes[idx] });
+  } catch (err) {
+    console.error('Update cliente error:', err);
+    res.status(500).json({ error: 'Error al actualizar el cliente' });
+  }
+});
+
+app.delete('/api/clientes/:id', requireClientesManagement, async (req, res) => {
+  const { id } = req.params;
+  try {
+    const clientes = await getClientes();
+    const filtrados = clientes.filter(c => c.id !== id);
+    if (filtrados.length === clientes.length) {
+      return res.status(404).json({ error: 'Cliente no encontrado' });
+    }
+    await writeSharedJson('clientes.json', filtrados);
+    res.json({ ok: true });
+  } catch (err) {
+    console.error('Delete cliente error:', err);
+    res.status(500).json({ error: 'Error al eliminar el cliente' });
+  }
+});
+
+// Validación pública: el cliente digita su documento
+app.post('/api/clientes/validar', async (req, res) => {
+  const doc = normDocumento((req.body || {}).documento);
+  if (!doc) return res.status(400).json({ error: 'Escribe tu documento' });
+  try {
+    const clientes = await getClientes();
+    const cliente = clientes.find(c => normDocumento(c.documento) === doc);
+    if (!cliente) {
+      return res.status(404).json({ error: 'Cliente no registrado' });
+    }
+    setClienteCookie(res, cliente);
+    res.json({ ok: true, cliente: { nombre: cliente.nombre, documento: cliente.documento } });
+  } catch (err) {
+    console.error('Validar cliente error:', err);
+    res.status(500).json({ error: 'Error al validar el cliente' });
+  }
+});
+
+app.get('/api/clientes/sesion', async (req, res) => {
+  try {
+    const cliente = await getClienteSesion(req);
+    if (!cliente) return res.json({ cliente: null });
+    res.json({ cliente: { nombre: cliente.nombre, documento: cliente.documento } });
+  } catch {
+    res.json({ cliente: null });
+  }
+});
+
+app.post('/api/clientes/salir', async (req, res) => {
+  res.clearCookie(CLIENTE_COOKIE, { signed: true });
+  res.json({ ok: true });
 });
 
 // ════════════════════════════════
@@ -1806,9 +2062,10 @@ app.post('/api/pedidos/generar-pdf', async (req, res) => {
 
     const clientY0 = vendedor ? 217 : 210;
     const clientFields = [
-      ['Nombre', cliente.nombre], ['Ciudad', cliente.ciudad],
-      ['Teléfono', cliente.telefono], ['Dirección', cliente.direccion]
+      ['Nombre', cliente.nombre]
     ];
+    if (cliente.documento) clientFields.push(['Documento', cliente.documento]);
+    clientFields.push(['Ciudad', cliente.ciudad], ['Teléfono', cliente.telefono], ['Dirección', cliente.direccion]);
     let clientY = clientY0;
     doc.fontSize(11).fillColor('#4a4a68').font('Helvetica');
     for (const [label, value] of clientFields) {

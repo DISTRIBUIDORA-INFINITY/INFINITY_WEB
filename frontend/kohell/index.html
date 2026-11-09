@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="estilos.css?v=1">
+  <link rel="stylesheet" href="estilos.css?v=2">
 </head>
 <body>
 
@@ -31,6 +31,7 @@
         <a href="#inicio">Inicio</a>
         <a href="#catalogo">Catálogo</a>
         <a href="/infinity/admin/?brand=kohell">Admin</a>
+        <a href="#" id="btnClientes">Clientes</a>
       </div>
       <a class="brand-switch-nav" href="/infinity/" aria-label="Ver catálogo Infinity" data-brand-switch>
         <span class="brand-switch-nav-icon" aria-hidden="true">↔</span>
@@ -41,6 +42,12 @@
       </button>
     </div>
   </nav>
+
+  <!-- AVISO: CLIENTE IDENTIFICADO -->
+  <div class="cliente-bar" id="clienteBar" style="display:none">
+    <span class="cliente-bar-text">Precios al por mayor activos para <strong id="clienteBarNombre"></strong></span>
+    <button type="button" class="cliente-bar-salir" id="clienteSalir">Salir</button>
+  </div>
 
   <!-- HERO -->
   <section class="hero" id="inicio">
@@ -193,6 +200,38 @@
     </div>
   </div>
 
-  <script src="app.js?v=3"></script>
+  <!-- MODAL CLIENTES -->
+  <div class="modal" id="clientModal">
+    <div class="modal-backdrop" data-client-close></div>
+    <div class="modal-content client-modal-content">
+      <div class="modal-header">
+        <h2>👤 Clientes</h2>
+        <button class="modal-close" data-client-close>✕</button>
+      </div>
+      <div class="modal-body">
+        <p class="client-modal-intro">Ingresa tu documento para ver los precios al por mayor.</p>
+        <div class="form-group">
+          <label for="clientDocumento">Documento</label>
+          <input type="text" id="clientDocumento" inputmode="numeric" autocomplete="off" placeholder="Ej: 1012345678">
+        </div>
+        <div class="form-error" id="clientError" role="alert"></div>
+        <div class="client-result" id="clientResult" style="display:none">
+          <strong id="clientResultNombre"></strong>
+          <span id="clientResultDoc"></span>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <div class="cart-actions">
+          <button class="btn btn-ghost" data-client-close>Cancelar</button>
+          <button class="btn btn-primary" id="clientSubmit">
+            <span class="btn-text">Consultar</span>
+            <span class="btn-spinner" style="display:none">⏳</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js?v=4"></script>
 </body>
 </html>

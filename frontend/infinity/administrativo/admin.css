@@ -2922,3 +2922,12 @@ select {
     margin-bottom: 0;
   }
 }
+
+/* Precios manuales en la ficha del producto */
+.producto-precios-row {
+  flex-wrap: wrap;
+  row-gap: 4px;
+}
+.producto-precios-row input {
+  width: 72px;
+}

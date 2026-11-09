@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="admin.css?v=25">
+  <link rel="stylesheet" href="admin.css?v=26">
 </head>
 <body>
 
@@ -92,6 +92,10 @@
         <button type="button" class="nav-item" data-view="categorias">
           <span class="nav-icon">🗂️</span>
           <span class="nav-label">Categorías</span>
+        </button>
+        <button type="button" class="nav-item" data-view="clientes">
+          <span class="nav-icon">👤</span>
+          <span class="nav-label">Clientes</span>
         </button>
         <button type="button" class="nav-item" data-view="usuarios">
           <span class="nav-icon">👥</span>
@@ -230,8 +234,10 @@
                 <strong>B</strong> DESCRIPCION
                 <span class="sep">|</span>
                 <strong>C</strong> PRECIO
+                <span class="sep">|</span>
+                <strong>D</strong> PRECIO AL MAYOR
               </span>
-              <span class="excel-format-meta">.xlsx / .csv · encabezados en la primera fila · celdas vacías no sobrescriben</span>
+              <span class="excel-format-meta">.xlsx / .csv · encabezados en la primera fila · el precio al mayor es obligatorio · si va en 0 se usa el mismo precio del detal</span>
             </p>
 
             <form id="formExcelUpload" class="excel-form" autocomplete="off">
@@ -329,6 +335,15 @@
               </span>
             </div>
 
+            <div class="form-group" style="max-width:340px;margin:18px 0 6px">
+              <label for="pdfModoPrecios">Precios en el PDF</label>
+              <select id="pdfModoPrecios">
+                <option value="detal">Precio unitario (al detal)</option>
+                <option value="mayor">Precio al por mayor</option>
+                <option value="ambos">Ambos precios</option>
+              </select>
+            </div>
+
             <div class="form-error" id="pdfError" role="alert"></div>
 
             <div class="pdf-actions">
@@ -399,6 +414,67 @@
         <div class="view-content-card">
           <div class="categorias-grid" id="categoriasGrid">
             <!-- Renderizado por JS -->
+          </div>
+        </div>
+      </section>
+
+      <!-- CLIENTES VIEW (compartida entre marcas) -->
+      <section class="view" data-view="clientes">
+        <header class="view-header">
+          <h1 class="view-title">Clientes</h1>
+          <p class="view-subtitle">Registro compartido entre Infinity y Kohell. Solo los clientes registrados ven los precios al por mayor en el catálogo.</p>
+        </header>
+
+        <div class="view-content-card">
+          <h2 class="view-section-title" id="clienteFormTitle">Registrar cliente</h2>
+          <p class="view-section-desc">Nombre y documento de identidad. El documento debe ser único.</p>
+
+          <form id="formCliente" autocomplete="off">
+            <input type="hidden" id="clienteId">
+            <div class="form-group">
+              <label for="clienteNombre">Nombre</label>
+              <input type="text" id="clienteNombre" maxlength="80" placeholder="Nombre completo" required>
+            </div>
+            <div class="form-group">
+              <label for="clienteDocumento">Documento</label>
+              <input type="text" id="clienteDocumento" maxlength="40" placeholder="Documento de identidad" required>
+            </div>
+            <div class="form-error" id="clientesError" role="alert"></div>
+            <div class="form-actions">
+              <button type="button" class="btn btn-ghost" id="btnClienteCancelar" style="display:none">Cancelar edición</button>
+              <button type="submit" class="btn btn-primary" id="btnClienteGuardar">
+                <span class="btn-text">Guardar cliente</span>
+                <span class="btn-spinner" style="display:none">⏳</span>
+              </button>
+            </div>
+          </form>
+        </div>
+
+        <div class="view-content-card" style="margin-top:24px">
+          <div class="subsection-header">
+            <h2 class="subsection-title">👥 Clientes registrados</h2>
+            <span class="productos-counter" id="clientesCount">0</span>
+          </div>
+
+          <div class="productos-search" style="margin-bottom:14px">
+            <span class="productos-search-icon" aria-hidden="true">🔍</span>
+            <input type="text" id="clientesSearch" placeholder="Buscar por nombre o documento..." autocomplete="off" spellcheck="false">
+          </div>
+
+          <div class="users-table-wrap">
+            <table class="users-table">
+              <thead>
+                <tr>
+                  <th>Nombre</th>
+                  <th>Documento</th>
+                  <th>Registrado</th>
+                  <th class="users-actions-col">Acciones</th>
+                </tr>
+              </thead>
+              <tbody id="clientesListBody">
+                <tr><td colspan="4" class="pedidos-empty">Cargando…</td></tr>
+              </tbody>
+            </table>
           </div>
         </div>
       </section>

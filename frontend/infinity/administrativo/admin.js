@@ -12,6 +12,7 @@ const TABS = [
   { id: 'agotados',   label: 'Agotados',   icon: '🚫' },
   { id: 'descargas',  label: 'Descargas',  icon: '⬇️' },
   { id: 'categorias', label: 'Categorías', icon: '🗂️' },
+  { id: 'clientes',   label: 'Clientes',   icon: '👤' },
   { id: 'usuarios',   label: 'Usuarios',   icon: '👥' },
   { id: 'pedidos',    label: 'Pedidos',    icon: '📋' }
 ];
@@ -56,6 +57,8 @@ function api(path) {
     path === '/vendedores' ||
     path.startsWith('/vendedores/') ||
     path.startsWith('/usuarios') ||
+    path === '/clientes' ||
+    path.startsWith('/clientes/') ||
     path.startsWith('/admin/') ||
     path === '/videos' ||
     path.startsWith('/videos/') ||
@@ -123,6 +126,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   setupProductosUpload();
   setupProductosSearch();
   setupExcelUpload();
+  setupClientesForm();
   setupBrandSwitcher();
 
   // Si entramos desde /kohell/admin/?brand=kohell, respetamos la marca de la URL
@@ -240,6 +244,10 @@ function cambiarVista(view) {
 
   if (view === 'categorias') {
     cargarCategorias();
+  }
+
+  if (view === 'clientes') {
+    cargarClientes();
   }
 
   if (view === 'productos') {
@@ -1965,6 +1973,14 @@ function renderProductosDisponibles() {
                     onclick="guardarVentaMinima('${escapeAttr(p.ref)}', '${inputId}')"
                     title="Guardar venta mínima">💾</button>
           </div>
+          <div class="producto-venta-minima producto-precios-row">
+            <label for="precio-${escapeAttr(p.ref)}">Precio</label>
+            <input type="number" id="precio-${escapeAttr(p.ref)}" value="${p.precio ?? ''}" min="0" step="1">
+            <label for="pmayor-${escapeAttr(p.ref)}" style="margin-left:6px">Mayor</label>
+            <input type="number" id="pmayor-${escapeAttr(p.ref)}" value="${p.precioMayor ?? ''}" min="0" step="1">
+            <button type="button" class="btn-icon btn-icon-save" data-precios-btn="${escapeAttr(p.ref)}"
+                    onclick="guardarPrecios('${escapeAttr(p.ref)}')" title="Guardar precios">💾</button>
+          </div>
         </div>
         <div class="producto-actions">
           <button class="btn-icon btn-icon-danger" onclick="abrirAgotarProducto('${escapeAttr(p.ref)}')" title="Marcar como agotado" type="button">🚫</button>
@@ -2556,7 +2572,8 @@ function createDescargaGestor(config) {
     selectorId, summaryId, summaryCountId, summaryLeavesId,
     btnGenerateId, btnAllId, btnNoneId, errorId,
     generateUrl, generateBtnText, fallbackFilename,
-    extractZipOnNonSafari = false
+    extractZipOnNonSafari = false,
+    extraBody = null
   } = config;
 
   const state = {
@@ -2809,7 +2826,7 @@ function createDescargaGestor(config) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify({ seleccion })
+        body: JSON.stringify({ seleccion, ...(extraBody ? extraBody() : {}) })
       });
 
       if (!res.ok) {
@@ -2901,7 +2918,10 @@ function initGestores() {
     errorId:          'pdfError',
     generateUrl:      api('/descargas/pdf'),
     generateBtnText:  '📄 Generar PDF',
-    fallbackFilename: `catalogo-${currentBrand}.pdf`
+    fallbackFilename: `catalogo-${currentBrand}.pdf`,
+    extraBody: () => ({
+      modoPrecios: document.getElementById('pdfModoPrecios')?.value || 'detal'
+    })
   });
 
   fotosGestor = createDescargaGestor({
@@ -3024,4 +3044,212 @@ function setupVideosForm() {
   }
 
   btn.addEventListener('click', subir);
+}
+
+// ════════════════════════════════
+// PRECIOS — edición manual (detal y al por mayor)
+// ════════════════════════════════
+async function guardarPrecios(ref) {
+  const inputPrecio = document.getElementById(`precio-${ref}`);
+  const inputMayor  = document.getElementById(`pmayor-${ref}`);
+  const btn         = document.querySelector(`button[data-precios-btn="${escapeAttr(ref)}"]`);
+  if (!inputPrecio || !inputMayor) return;
+
+  const precio = parseFloat(inputPrecio.value);
+  const precioMayor = parseFloat(inputMayor.value);
+
+  if (Number.isNaN(precio) || precio < 0) {
+    alert('El precio debe ser un número mayor o igual a 0');
+    inputPrecio.focus();
+    return;
+  }
+  if (Number.isNaN(precioMayor) || precioMayor < 0) {
+    alert('El precio al mayor debe ser un número mayor o igual a 0');
+    inputMayor.focus();
+    return;
+  }
+
+  if (btn) { btn.disabled = true; btn.textContent = '⏳'; }
+
+  try {
+    const res = await fetch(api(`/productos/${encodeURIComponent(ref)}/precios`), {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ precio, precioMayor }),
+      credentials: 'include'
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Error al guardar');
+
+    const p = productosCache.find(x => x.ref === ref);
+    if (p) { p.precio = data.precio; p.precioMayor = data.precioMayor; }
+    inputPrecio.value = data.precio;
+    inputMayor.value  = data.precioMayor;
+
+    if (btn) {
+      btn.textContent = '✓';
+      setTimeout(() => { btn.textContent = '💾'; btn.disabled = false; }, 1200);
+    }
+  } catch (err) {
+    alert('Error guardando precios: ' + err.message);
+    if (btn) { btn.textContent = '💾'; btn.disabled = false; }
+  }
+}
+
+// ════════════════════════════════
+// CLIENTES (registro compartido entre marcas)
+// ════════════════════════════════
+let clientesCache = [];
+
+async function cargarClientes() {
+  const tbody = document.getElementById('clientesListBody');
+  if (!tbody) return;
+  tbody.innerHTML = '<tr><td colspan="4" class="pedidos-empty">Cargando…</td></tr>';
+
+  try {
+    const res = await fetch(api('/clientes'), { credentials: 'include' });
+    if (!res.ok) {
+      if (res.status === 401 || res.status === 403) { mostrarLogin(); return; }
+      throw new Error('Error al cargar clientes');
+    }
+    clientesCache = await res.json();
+    renderClientes();
+  } catch (err) {
+    tbody.innerHTML = `<tr><td colspan="4" class="pedidos-empty">${escapeHtml(err.message)}</td></tr>`;
+  }
+}
+
+function renderClientes() {
+  const tbody = document.getElementById('clientesListBody');
+  const countEl = document.getElementById('clientesCount');
+  const q = (document.getElementById('clientesSearch')?.value || '').trim().toLowerCase();
+  if (!tbody) return;
+
+  let lista = clientesCache;
+  if (q) {
+    lista = lista.filter(c =>
+      String(c.nombre || '').toLowerCase().includes(q) ||
+      String(c.documento || '').toLowerCase().includes(q)
+    );
+  }
+
+  if (countEl) countEl.textContent = `${lista.length} / ${clientesCache.length}`;
+
+  if (lista.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="4" class="pedidos-empty">${q ? 'Sin resultados' : 'Aún no hay clientes registrados.'}</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = lista.map(c => `
+    <tr>
+      <td>${escapeHtml(c.nombre)}</td>
+      <td><code>${escapeHtml(c.documento)}</code></td>
+      <td>${c.creadoEn ? new Date(c.creadoEn).toLocaleDateString('es-CO') : '—'}</td>
+      <td class="users-actions-col">
+        <button class="btn-icon" type="button" onclick="editarCliente('${escapeAttr(c.id)}')" title="Editar">✏️</button>
+        <button class="btn-icon btn-icon-danger" type="button" onclick="eliminarCliente('${escapeAttr(c.id)}')" title="Eliminar">🗑️</button>
+      </td>
+    </tr>
+  `).join('');
+}
+
+function setupClientesForm() {
+  const form      = document.getElementById('formCliente');
+  const inputId   = document.getElementById('clienteId');
+  const inputNom  = document.getElementById('clienteNombre');
+  const inputDoc  = document.getElementById('clienteDocumento');
+  const errEl     = document.getElementById('clientesError');
+  const btnCancel = document.getElementById('btnClienteCancelar');
+  const btnSave   = document.getElementById('btnClienteGuardar');
+  const search    = document.getElementById('clientesSearch');
+  if (!form) return;
+
+  const resetForm = () => {
+    inputId.value = '';
+    inputNom.value = '';
+    inputDoc.value = '';
+    errEl.textContent = '';
+    errEl.classList.remove('show');
+    btnCancel.style.display = 'none';
+    const title = document.getElementById('clienteFormTitle');
+    if (title) title.textContent = 'Registrar cliente';
+    if (btnSave) btnSave.querySelector('.btn-text').textContent = 'Guardar cliente';
+  };
+
+  btnCancel?.addEventListener('click', resetForm);
+
+  search?.addEventListener('input', renderClientes);
+
+  form.addEventListener('submit', async e => {
+    e.preventDefault();
+    const nombre = inputNom.value.trim();
+    const documento = inputDoc.value.trim();
+    errEl.textContent = '';
+    errEl.classList.remove('show');
+
+    if (!nombre) { errEl.textContent = 'El nombre es obligatorio'; errEl.classList.add('show'); return; }
+    if (!documento) { errEl.textContent = 'El documento es obligatorio'; errEl.classList.add('show'); return; }
+
+    const editando = !!inputId.value;
+    const url = editando ? api(`/clientes/${encodeURIComponent(inputId.value)}`) : api('/clientes');
+    const method = editando ? 'PUT' : 'POST';
+
+    const spin = btnSave?.querySelector('.btn-spinner');
+    const text = btnSave?.querySelector('.btn-text');
+    if (btnSave) btnSave.disabled = true;
+    if (spin) spin.style.display = 'inline-block';
+    if (text) text.textContent = editando ? 'Guardando…' : 'Creando…';
+
+    try {
+      const res = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nombre, documento }),
+        credentials: 'include'
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || 'Error al guardar el cliente');
+
+      resetForm();
+      await cargarClientes();
+    } catch (err) {
+      errEl.textContent = err.message;
+      errEl.classList.add('show');
+    } finally {
+      if (btnSave) btnSave.disabled = false;
+      if (spin) spin.style.display = 'none';
+      if (text) text.textContent = 'Guardar cliente';
+    }
+  });
+}
+
+function editarCliente(id) {
+  const c = clientesCache.find(x => x.id === id);
+  if (!c) return;
+  document.getElementById('clienteId').value = c.id;
+  document.getElementById('clienteNombre').value = c.nombre || '';
+  document.getElementById('clienteDocumento').value = c.documento || '';
+  const title = document.getElementById('clienteFormTitle');
+  if (title) title.textContent = 'Editar cliente';
+  const btnCancel = document.getElementById('btnClienteCancelar');
+  if (btnCancel) btnCancel.style.display = '';
+  document.getElementById('clienteNombre').focus();
+}
+
+async function eliminarCliente(id) {
+  const c = clientesCache.find(x => x.id === id);
+  if (!c) return;
+  const ok = confirm(`¿Eliminar al cliente "${c.nombre}" (${c.documento})?`);
+  if (!ok) return;
+  try {
+    const res = await fetch(api(`/clientes/${encodeURIComponent(id)}`), {
+      method: 'DELETE',
+      credentials: 'include'
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || 'Error al eliminar');
+    await cargarClientes();
+  } catch (err) {
+    alert('Error eliminando cliente: ' + err.message);
+  }
 }

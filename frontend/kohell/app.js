@@ -8,6 +8,7 @@
 // ════════════════════════════════
 let categorias = [];
 let productos  = [];
+let clienteActual = null; // cliente identificado con su documento (precios al por mayor)
 
 // Identifica la marca del catálogo actual (usado para taggear items del carrito)
 const CURRENT_BRAND = 'kohell';
@@ -318,9 +319,9 @@ function renderProductos() {
     const nombre = p.nombre || p.ref || 'Sin nombre';
     const desc   = p.desc || '';
     const ref    = p.ref || '';
-    const precio = (p.precio !== undefined && p.precio !== null && p.precio !== '')
-      ? `$${Number(p.precio).toLocaleString('es-CO')}`
-      : '—';
+    const conMayor = tienePrecioMayor(p);
+    const precio = fmtPrecio(p.precio);
+    const precioCarrito = conMayor ? Number(p.precioMayor) : p.precio;
     const imgSrc = p.img
       ? (p.img.startsWith('/') ? p.img : (/^(infinity|kohell)\//.test(p.img) ? `/Imagenes/${p.img}` : `/Imagenes/kohell/${p.img}`))
       : '';
@@ -338,16 +339,19 @@ function renderProductos() {
           <h3 class="producto-nombre">${escapeHtml(nombre)}</h3>
           ${desc ? `<p class="producto-desc">${escapeHtml(desc)}</p>` : ''}
           ${mostrarRef ? `<div class="producto-ref">${escapeHtml(ref)}</div>` : ''}
-          <div class="producto-precio">${precio}</div>
+          ${conMayor
+            ? `<div class="producto-precio producto-precio-detalle">${precio}</div>
+               <div class="producto-precio-mayor"><small>Al por mayor</small>${fmtPrecio(p.precioMayor)}</div>`
+            : `<div class="producto-precio">${precio}</div>`}
           ${vm > 1 ? `<div class="producto-venta-minima-tag">Venta mínima: ${vm} unidades</div>` : ''}
           <div class="producto-card-add">
             <input type="number" class="producto-card-add-qty" value="${vm}" min="${vm}" max="99" step="${vm}"
                    data-ref="${p.ref}" data-vm="${vm}" aria-label="Cantidad">
             <button class="producto-card-add-btn" data-ref="${p.ref}"
                     data-nombre="${escapeHtml(nombre)}"
-                    data-precio="${p.precio ?? ''}"
+                    data-precio="${precioCarrito ?? ''}"
                     data-venta-minima="${vm}"
-                    ${p.precio ? '' : 'disabled'}>
+                    ${precioCarrito ? '' : 'disabled'}>
               + Agregar
             </button>
           </div>
@@ -567,6 +571,10 @@ function setupCartModals() {
   document.getElementById('cartPdfBtn').addEventListener('click', async () => {
     cerrarModal('cartModal');
     document.getElementById('orderForm').reset();
+    if (clienteActual) {
+      const inputNombre = document.getElementById('orderNombre');
+      if (inputNombre) inputNombre.value = clienteActual.nombre || '';
+    }
     document.getElementById('orderError').classList.remove('show');
 
     // Cargar vendedores en el select
@@ -627,7 +635,7 @@ async function enviarPedido() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         items: carrito.map(i => ({ ref: i.ref, nombre: i.nombre, precio: i.precio, cantidad: i.cantidad, marca: i.marca })),
-        cliente: { nombre, ciudad, telefono, direccion },
+        cliente: { nombre, ciudad, telefono, direccion, documento: clienteActual ? clienteActual.documento : '' },
         vendedor
       })
     });
@@ -738,12 +746,177 @@ function wireAddToCart() {
 }
 
 // ════════════════════════════════
+// CLIENTES — IDENTIFICACIÓN Y PRECIOS AL POR MAYOR
+// ════════════════════════════════
+function tienePrecioMayor(p) {
+  return !!clienteActual && p &&
+    p.precioMayor !== undefined && p.precioMayor !== null && p.precioMayor !== '';
+}
+
+function fmtPrecio(v) {
+  return (v !== undefined && v !== null && v !== '')
+    ? `$${Number(v).toLocaleString('es-CO')}`
+    : '—';
+}
+
+function precioCarritoDe(p) {
+  return tienePrecioMayor(p) ? Number(p.precioMayor) : Number(p.precio);
+}
+
+async function cargarClienteSesion() {
+  try {
+    const res = await fetch('/api/clientes/sesion');
+    if (!res.ok) return;
+    const data = await res.json();
+    clienteActual = data.cliente || null;
+    actualizarUIcliente();
+  } catch (err) {
+    console.error('Error cargando sesión de cliente:', err);
+  }
+}
+
+function actualizarUIcliente() {
+  const bar    = document.getElementById('clienteBar');
+  const nomEl  = document.getElementById('clienteBarNombre');
+  const navBtn = document.getElementById('btnClientes');
+
+  if (bar && nomEl) {
+    if (clienteActual) {
+      nomEl.textContent = clienteActual.nombre;
+      bar.style.display = 'flex';
+    } else {
+      bar.style.display = 'none';
+    }
+  }
+
+  if (navBtn) {
+    navBtn.textContent = clienteActual
+      ? `Cliente: ${String(clienteActual.nombre || '').split(' ')[0]}`
+      : 'Clientes';
+  }
+}
+
+async function recargarProductos() {
+  try {
+    const res = await fetch('/api/kohell/productos');
+    if (!res.ok) return;
+    productos = await res.json();
+    reajustarCarritoPrecios();
+    renderProductos();
+  } catch (err) {
+    console.error('Error recargando productos:', err);
+  }
+}
+
+function reajustarCarritoPrecios() {
+  let changed = false;
+  for (const item of carrito) {
+    const p = productos.find(x => x.ref === item.ref);
+    if (!p) continue;
+    const nuevo = precioCarritoDe(p);
+    if (Number.isFinite(nuevo) && item.precio !== nuevo) {
+      item.precio = nuevo;
+      changed = true;
+    }
+  }
+  if (changed) {
+    guardarCarrito();
+    actualizarBadge();
+    actualizarTotal();
+  }
+}
+
+function setupClienteModal() {
+  const navBtn  = document.getElementById('btnClientes');
+  const salir   = document.getElementById('clienteSalir');
+  const submit  = document.getElementById('clientSubmit');
+  const input   = document.getElementById('clientDocumento');
+  const errEl   = document.getElementById('clientError');
+  const result  = document.getElementById('clientResult');
+  if (!navBtn || !submit || !input) return;
+
+  navBtn.addEventListener('click', e => {
+    e.preventDefault();
+    errEl.textContent = '';
+    errEl.classList.remove('show');
+    result.style.display = 'none';
+    input.value = '';
+    abrirModal('clientModal');
+    setTimeout(() => input.focus(), 60);
+  });
+
+  document.querySelectorAll('[data-client-close]').forEach(el => {
+    el.addEventListener('click', () => cerrarModal('clientModal'));
+  });
+
+  salir?.addEventListener('click', async () => {
+    try { await fetch('/api/clientes/salir', { method: 'POST' }); } catch {}
+    clienteActual = null;
+    actualizarUIcliente();
+    await recargarProductos();
+  });
+
+  const consultar = async () => {
+    const documento = input.value.trim();
+    errEl.textContent = '';
+    errEl.classList.remove('show');
+    result.style.display = 'none';
+
+    if (!documento) {
+      errEl.textContent = 'Escribe tu documento';
+      errEl.classList.add('show');
+      return;
+    }
+
+    const textEl = submit.querySelector('.btn-text');
+    const spin   = submit.querySelector('.btn-spinner');
+    submit.disabled = true;
+    if (textEl) textEl.textContent = 'Consultando…';
+    if (spin) spin.style.display = 'inline-block';
+
+    try {
+      const res = await fetch('/api/clientes/validar', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ documento })
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || 'Cliente no registrado');
+
+      clienteActual = data.cliente;
+      actualizarUIcliente();
+
+      document.getElementById('clientResultNombre').textContent = data.cliente.nombre;
+      document.getElementById('clientResultDoc').textContent    = `Documento: ${data.cliente.documento}`;
+      result.style.display = 'flex';
+
+      await recargarProductos();
+      setTimeout(() => cerrarModal('clientModal'), 900);
+    } catch (err) {
+      errEl.textContent = err.message;
+      errEl.classList.add('show');
+    } finally {
+      submit.disabled = false;
+      if (textEl) textEl.textContent = 'Consultar';
+      if (spin) spin.style.display = 'none';
+    }
+  };
+
+  submit.addEventListener('click', consultar);
+  input.addEventListener('keydown', e => {
+    if (e.key === 'Enter') { e.preventDefault(); consultar(); }
+  });
+}
+
+// ════════════════════════════════
 // INIT
 // ════════════════════════════════
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
   setupSearch();
   setupNav();
   setupCartModals();
+  setupClienteModal();
+  await cargarClienteSesion();
   cargarDatos();
   cargarRedes();
 });
