@@ -1733,13 +1733,7 @@ select {
   line-height: 1.55;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after {
-    animation-duration: 0.01ms !important;
-    transition-duration: 0.01ms !important;
-  }
-  .mesh-blob { animation: none; }
-}
+
 
 @media (max-width: 480px) {
   .subtab { padding: 8px 12px; font-size: 0.82rem; }

@@ -857,14 +857,7 @@ section {
   }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-  }
-  .mesh-blob { animation: none; }
-}
+
 
 /* ════════════════════════════════
    RESPONSIVE
@@ -1567,10 +1560,7 @@ body::before {
 }
 [data-reveal].is-visible { opacity: 1; transform: none; }
 
-@media (prefers-reduced-motion: reduce) {
-  [data-reveal] { opacity: 1; transform: none; transition: none; }
-  * { animation-duration: 0.001ms !important; animation-iteration-count: 1 !important; }
-}
+
 
 /* ── NAVBAR ── */
 .navbar {

@@ -1,18 +1,17 @@
 /* ════════════════════════════════
    ANIMACIONES — Editorial fluido
    Reveals al hacer scroll, navbar, parallax y franja
+   (siempre activas, sin depender del ajuste del sistema)
    ════════════════════════════════ */
 (function () {
-  const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-
-  // ── Reveals al entrar en pantalla ──
   let observer = null;
 
+  // ── Reveals al entrar en pantalla ──
   function activarReveals() {
     const nodos = document.querySelectorAll('[data-reveal]:not(.is-visible)');
     if (!nodos.length) return;
 
-    if (reduce || !('IntersectionObserver' in window)) {
+    if (!('IntersectionObserver' in window)) {
       nodos.forEach(n => n.classList.add('is-visible'));
       return;
     }
@@ -38,11 +37,9 @@
     const y = window.scrollY || 0;
     document.documentElement.classList.toggle('is-scrolled', y > 20);
 
-    if (!reduce) {
-      const media = document.querySelector('.hero-media');
-      if (media && y < 900) {
-        media.style.transform = `translateY(${Math.min(y * 0.06, 40)}px)`;
-      }
+    const media = document.querySelector('.hero-media');
+    if (media && y < 900) {
+      media.style.transform = `translateY(${Math.min(y * 0.06, 40)}px)`;
     }
   }
 

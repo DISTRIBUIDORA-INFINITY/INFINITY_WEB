@@ -450,9 +450,7 @@ body::before {
   transition-delay: calc(var(--reveal-i, 0) * 90ms);
 }
 [data-reveal].is-visible { opacity: 1; transform: none; }
-@media (prefers-reduced-motion: reduce) {
-  [data-reveal] { opacity: 1; transform: none; transition: none; }
-}
+
 
 /* NAVBAR */
 .navbar {
